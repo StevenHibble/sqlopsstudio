@@ -7,7 +7,7 @@
 import { attachTableStyler } from 'sql/common/theme/styler';
 import QueryRunner from 'sql/parts/query/execution/queryRunner';
 import { VirtualizedCollection, AsyncDataProvider } from 'sql/base/browser/ui/table/asyncDataView';
-import { Table, ITableStyles, ITableMouseEvent } from 'sql/base/browser/ui/table/table';
+import { Table } from 'sql/base/browser/ui/table/table';
 import { ScrollableSplitView } from 'sql/base/browser/ui/scrollableSplitview/scrollableSplitview';
 import { MouseWheelSupport } from 'sql/base/browser/ui/table/plugins/mousewheelTableScroll.plugin';
 import { AutoColumnSize } from 'sql/base/browser/ui/table/plugins/autoSizeColumns.plugin';
@@ -19,6 +19,7 @@ import { escape } from 'sql/base/common/strings';
 import { hyperLinkFormatter, textFormatter } from 'sql/parts/grid/services/sharedServices';
 import { CopyKeybind } from 'sql/base/browser/ui/table/plugins/copyKeybind.plugin';
 import { AdditionalKeyBindings } from 'sql/base/browser/ui/table/plugins/additionalKeyBindings.plugin';
+import { ITableStyles, ITableMouseEvent } from 'sql/base/browser/ui/table/interfaces';
 
 import * as sqlops from 'sqlops';
 import * as pretty from 'pretty-data';
@@ -42,13 +43,14 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUntitledEditorService } from 'vs/workbench/services/untitled/common/untitledEditorService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IAction } from 'vs/base/common/actions';
+import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 
 const ROW_HEIGHT = 29;
 const HEADER_HEIGHT = 26;
 const MIN_GRID_HEIGHT_ROWS = 8;
 const ESTIMATED_SCROLL_BAR_HEIGHT = 10;
 const BOTTOM_PADDING = 15;
-const ACTIONBAR_WIDTH = 26;
+const ACTIONBAR_WIDTH = 36;
 
 // minimum height needed to show the full actionbar
 const ACTIONBAR_HEIGHT = 100;
@@ -60,6 +62,10 @@ export class GridPanelState {
 	public tableStates: GridTableState[] = [];
 	public scrollPosition: number;
 	public collapsed = false;
+
+	dispose() {
+		dispose(this.tableStates);
+	}
 }
 
 export interface IGridTableState {
@@ -67,14 +73,14 @@ export interface IGridTableState {
 	maximized: boolean;
 }
 
-export class GridTableState {
+export class GridTableState extends Disposable {
 
 	private _maximized: boolean;
 
-	private _onMaximizedChange = new Emitter<boolean>();
+	private _onMaximizedChange = this._register(new Emitter<boolean>());
 	public onMaximizedChange: Event<boolean> = this._onMaximizedChange.event;
 
-	private _onCanBeMaximizedChange = new Emitter<boolean>();
+	private _onCanBeMaximizedChange = this._register(new Emitter<boolean>());
 	public onCanBeMaximizedChange: Event<boolean> = this._onCanBeMaximizedChange.event;
 
 	private _canBeMaximized: boolean;
@@ -85,6 +91,7 @@ export class GridTableState {
 	public activeCell: Slick.Cell;
 
 	constructor(public readonly resultId: number, public readonly batchId: number) {
+		super();
 	}
 
 	public get canBeMaximized(): boolean {
@@ -134,7 +141,7 @@ export class GridPanel extends ViewletPanel {
 		@IInstantiationService private instantiationService: IInstantiationService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService);
-		this.splitView = new ScrollableSplitView(this.container, { enableResizing: false });
+		this.splitView = new ScrollableSplitView(this.container, { enableResizing: false, verticalScrollbarVisibility: ScrollbarVisibility.Visible });
 		this.splitView.onScroll(e => {
 			if (this.state) {
 				this.state.scrollPosition = e;
@@ -216,13 +223,13 @@ export class GridPanel extends ViewletPanel {
 			}
 			let table = this.instantiationService.createInstance(GridTable, this.runner, set);
 			table.state = tableState;
-			tableState.onMaximizedChange(e => {
+			this.tableDisposable.push(tableState.onMaximizedChange(e => {
 				if (e) {
 					this.maximizeTable(table.id);
 				} else {
 					this.minimizeTables();
 				}
-			});
+			}));
 			this.tableDisposable.push(attachTableStyler(table, this.themeService));
 
 			tables.push(table);
@@ -237,11 +244,17 @@ export class GridPanel extends ViewletPanel {
 		this.tables = this.tables.concat(tables);
 	}
 
+	public clear() {
+		this.reset();
+	}
+
 	private reset() {
 		for (let i = this.splitView.length - 1; i >= 0; i--) {
 			this.splitView.removeView(i);
 		}
 		dispose(this.tables);
+		dispose(this.tableDisposable);
+		this.tableDisposable = [];
 		this.tables = [];
 		this.maximizedGrid = undefined;
 
@@ -291,6 +304,15 @@ export class GridPanel extends ViewletPanel {
 
 	public get state(): GridPanelState {
 		return this._state;
+	}
+
+	public dispose() {
+		dispose(this.queryRunnerDisposables);
+		dispose(this.tableDisposable);
+		dispose(this.tables);
+		this.tableDisposable = undefined;
+		this.tables = undefined;
+		super.dispose();
 	}
 }
 
@@ -443,9 +465,9 @@ class GridTable<T> extends Disposable implements IView {
 
 	private setupState() {
 		// change actionbar on maximize change
-		this.state.onMaximizedChange(this.rebuildActionBar, this);
+		this._register(this.state.onMaximizedChange(this.rebuildActionBar, this));
 
-		this.state.onCanBeMaximizedChange(this.rebuildActionBar, this);
+		this._register(this.state.onCanBeMaximizedChange(this.rebuildActionBar, this));
 
 		if (this.state.scrollPosition) {
 			// most of the time this won't do anything
@@ -655,6 +677,8 @@ class GridTable<T> extends Disposable implements IView {
 
 	public dispose() {
 		$(this.container).destroy();
+		this.table.dispose();
+		this.actionBar.dispose();
 		super.dispose();
 	}
 }
