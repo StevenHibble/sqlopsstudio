@@ -2,12 +2,11 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { MainThreadDashboardWebviewShape, SqlMainContext, ExtHostDashboardWebviewsShape, SqlExtHostContext } from 'sql/workbench/api/node/sqlExtHost.protocol';
-import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
-import { IDashboardViewService, IDashboardWebview } from 'sql/services/dashboard/common/dashboardViewService';
+import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
+import { IDashboardViewService, IDashboardWebview } from 'sql/platform/dashboard/common/dashboardViewService';
 
 @extHostNamedCustomer(SqlMainContext.MainThreadDashboardWebview)
 export class MainThreadDashboardWebview implements MainThreadDashboardWebviewShape {

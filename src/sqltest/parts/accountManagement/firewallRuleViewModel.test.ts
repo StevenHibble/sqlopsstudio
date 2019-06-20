@@ -3,9 +3,8 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
 import * as assert from 'assert';
-import { FirewallRuleViewModel } from 'sql/parts/accountManagement/firewallRuleDialog/firewallRuleViewModel';
+import { FirewallRuleViewModel } from 'sql/platform/accounts/common/firewallRuleViewModel';
 
 suite('Firewall rule view model tests', () => {
 	let viewModel: FirewallRuleViewModel;
@@ -19,7 +18,7 @@ suite('Firewall rule view model tests', () => {
 		viewModel.updateDefaultValues(IPAddress);
 		assert.equal(IPAddress, viewModel.defaultIPAddress);
 		assert.equal('250.222.155.0', viewModel.defaultFromSubnetIPRange);
-		assert.equal('250.222.155.255', viewModel.defaultToSubnetIPRange);;
+		assert.equal('250.222.155.255', viewModel.defaultToSubnetIPRange);
 	});
 
 	test('update default values to 250.222.155.0 should calculate the correct default subnet IP range', () => {

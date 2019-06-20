@@ -3,16 +3,14 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
-
-import { ConnectionProfile } from 'sql/parts/connection/common/connectionProfile';
-import { IConnectionProfile, IConnectionProfileStore } from 'sql/parts/connection/common/interfaces';
-import * as sqlops from 'sqlops';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
+import { IConnectionProfile, IConnectionProfileStore } from 'sql/platform/connection/common/interfaces';
+import * as azdata from 'azdata';
 import * as assert from 'assert';
 import { ConnectionOptionSpecialType, ServiceOptionType } from 'sql/workbench/api/common/sqlExtHostTypes';
 import { CapabilitiesTestService } from 'sqltest/stubs/capabilitiesTestService';
 import { ConnectionProviderProperties } from 'sql/workbench/parts/connection/common/connectionProviderExtension';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 suite('SQL ConnectionProfileInfo tests', () => {
 	let msSQLCapabilities: ConnectionProviderProperties;
@@ -30,7 +28,7 @@ suite('SQL ConnectionProfileInfo tests', () => {
 		groupId: 'group id',
 		getOptionsKey: undefined,
 		matches: undefined,
-		providerName: 'MSSQL',
+		providerName: mssqlProviderName,
 		options: {},
 		saveProfile: true,
 		id: undefined
@@ -47,12 +45,12 @@ suite('SQL ConnectionProfileInfo tests', () => {
 			password: 'password',
 			authenticationType: ''
 		},
-		providerName: 'MSSQL',
+		providerName: mssqlProviderName,
 		savePassword: true
 	};
 
 	setup(() => {
-		let connectionProvider: sqlops.ConnectionOption[] = [
+		let connectionProvider: azdata.ConnectionOption[] = [
 			{
 				name: 'connectionName',
 				displayName: undefined,
@@ -127,12 +125,12 @@ suite('SQL ConnectionProfileInfo tests', () => {
 			}
 		];
 		msSQLCapabilities = {
-			providerId: 'MSSQL',
+			providerId: mssqlProviderName,
 			displayName: 'MSSQL',
 			connectionOptions: connectionProvider
 		};
 		capabilitiesService = new CapabilitiesTestService();
-		capabilitiesService.capabilities['MSSQL'] = { connection: msSQLCapabilities };
+		capabilitiesService.capabilities[mssqlProviderName] = { connection: msSQLCapabilities };
 	});
 
 	test('set properties should set the values correctly', () => {
@@ -216,5 +214,9 @@ suite('SQL ConnectionProfileInfo tests', () => {
 		let newProfile = conn.cloneWithDatabase('new db');
 		assert.notEqual(newProfile.id, conn.id);
 		assert.equal(newProfile.databaseName, 'new db');
+	});
+
+	test('an empty connection profile does not cause issues', () => {
+		assert.doesNotThrow(() => new ConnectionProfile(capabilitiesService, {} as IConnectionProfile));
 	});
 });

@@ -2,7 +2,6 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import 'vs/css!./inputBox';
 
@@ -24,46 +23,49 @@ import { IHistoryNavigationWidget } from 'vs/base/browser/history';
 const $ = dom.$;
 
 export interface IInputOptions extends IInputBoxStyles {
-	placeholder?: string;
-	ariaLabel?: string;
-	type?: string;
-	validationOptions?: IInputValidationOptions;
-	flexibleHeight?: boolean;
-	actions?: IAction[];
+	readonly placeholder?: string;
+	readonly ariaLabel?: string;
+	readonly type?: string;
+	readonly validationOptions?: IInputValidationOptions;
+	readonly flexibleHeight?: boolean;
+	readonly actions?: IAction[];
 
 	// {{SQL CARBON EDIT}} Candidate for addition to vscode
-	min?: string;
-	max?: string;
-	useDefaultValidation?: boolean;
+	readonly min?: string;
+	readonly max?: string;
+	readonly useDefaultValidation?: boolean;
 }
 
 export interface IInputBoxStyles {
-	inputBackground?: Color;
-	inputForeground?: Color;
-	inputBorder?: Color;
-	inputValidationInfoBorder?: Color;
-	inputValidationInfoBackground?: Color;
-	inputValidationWarningBorder?: Color;
-	inputValidationWarningBackground?: Color;
-	inputValidationErrorBorder?: Color;
-	inputValidationErrorBackground?: Color;
+	readonly inputBackground?: Color;
+	readonly inputForeground?: Color;
+	readonly inputBorder?: Color;
+	readonly inputValidationInfoBorder?: Color;
+	readonly inputValidationInfoBackground?: Color;
+	readonly inputValidationInfoForeground?: Color;
+	readonly inputValidationWarningBorder?: Color;
+	readonly inputValidationWarningBackground?: Color;
+	readonly inputValidationWarningForeground?: Color;
+	readonly inputValidationErrorBorder?: Color;
+	readonly inputValidationErrorBackground?: Color;
+	readonly inputValidationErrorForeground?: Color;
 }
 
 export interface IInputValidator {
-	(value: string): IMessage;
+	(value: string): IMessage | null;
 }
 
 export interface IMessage {
-	content: string;
-	formatContent?: boolean; // defaults to false
-	type?: MessageType;
+	readonly content: string;
+	readonly formatContent?: boolean; // defaults to false
+	readonly type?: MessageType;
 }
 
 export interface IInputValidationOptions {
-	validation: IInputValidator;
+	validation?: IInputValidator;
 }
 
-export enum MessageType {
+export const enum MessageType {
 	INFO = 1,
 	WARNING = 2,
 	ERROR = 3
@@ -87,31 +89,35 @@ export const defaultOpts = {
 };
 
 export class InputBox extends Widget {
-	private contextViewProvider: IContextViewProvider;
+	private contextViewProvider?: IContextViewProvider;
 	element: HTMLElement;
 	private input: HTMLInputElement;
 	private mirror: HTMLElement;
-	private actionbar: ActionBar;
+	private actionbar?: ActionBar;
 	private options: IInputOptions;
-	private message: IMessage;
+	private message: IMessage | null;
 	private placeholder: string;
 	private ariaLabel: string;
-	private validation: IInputValidator;
-	private state = 'idle';
-	private cachedHeight: number;
+	private validation?: IInputValidator;
+	private state: string | null = 'idle';
+	private cachedHeight: number | null;
 
-	// {{SQL CARBON EDIT}}
+	// {{SQL CARBON EDIT}} - Add showValidationMessage and set inputBackground, inputForeground, and inputBorder as protected
 	protected showValidationMessage: boolean;
-	protected inputBackground: Color;
-	protected inputForeground: Color;
-	protected inputBorder: Color;
+	protected inputBackground?: Color;
+	protected inputForeground?: Color;
+	protected inputBorder?: Color;
+	// {{SQL CARBON EDIT}} - End
 
-	private inputValidationInfoBorder: Color;
-	private inputValidationInfoBackground: Color;
-	private inputValidationWarningBorder: Color;
-	private inputValidationWarningBackground: Color;
-	private inputValidationErrorBorder: Color;
-	private inputValidationErrorBackground: Color;
+	private inputValidationInfoBorder?: Color;
+	private inputValidationInfoBackground?: Color;
+	private inputValidationInfoForeground?: Color;
+	private inputValidationWarningBorder?: Color;
+	private inputValidationWarningBackground?: Color;
+	private inputValidationWarningForeground?: Color;
+	private inputValidationErrorBorder?: Color;
+	private inputValidationErrorBackground?: Color;
+	private inputValidationErrorForeground?: Color;
 
 	private _onDidChange = this._register(new Emitter<string>());
 	public readonly onDidChange: Event<string> = this._onDidChange.event;
@@ -119,7 +125,7 @@ export class InputBox extends Widget {
 	private _onDidHeightChange = this._register(new Emitter<number>());
 	public readonly onDidHeightChange: Event<number> = this._onDidHeightChange.event;
 
-	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider, options?: IInputOptions) {
+	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider | undefined, options?: IInputOptions) {
 		super();
 
 		this.contextViewProvider = contextViewProvider;
@@ -136,10 +142,13 @@ export class InputBox extends Widget {
 
 		this.inputValidationInfoBorder = this.options.inputValidationInfoBorder;
 		this.inputValidationInfoBackground = this.options.inputValidationInfoBackground;
+		this.inputValidationInfoForeground = this.options.inputValidationInfoForeground;
 		this.inputValidationWarningBorder = this.options.inputValidationWarningBorder;
 		this.inputValidationWarningBackground = this.options.inputValidationWarningBackground;
+		this.inputValidationWarningForeground = this.options.inputValidationWarningForeground;
 		this.inputValidationErrorBorder = this.options.inputValidationErrorBorder;
 		this.inputValidationErrorBackground = this.options.inputValidationErrorBackground;
+		this.inputValidationErrorForeground = this.options.inputValidationErrorForeground;
 
 		if (this.options.validationOptions) {
 			this.validation = this.options.validationOptions.validation;
@@ -152,7 +161,7 @@ export class InputBox extends Widget {
 		let tagName = this.options.flexibleHeight ? 'textarea' : 'input';
 
 		let wrapper = dom.append(this.element, $('.wrapper'));
-		this.input = <HTMLInputElement>dom.append(wrapper, $(tagName + '.input'));
+		this.input = dom.append(wrapper, $(tagName + '.input'));
 		this.input.setAttribute('autocorrect', 'off');
 		this.input.setAttribute('autocapitalize', 'off');
 		this.input.setAttribute('spellcheck', 'false');
@@ -162,6 +171,7 @@ export class InputBox extends Widget {
 
 		if (this.options.flexibleHeight) {
 			this.mirror = dom.append(wrapper, $('div.mirror'));
+			this.mirror.innerHTML = '&nbsp;';
 		} else {
 			this.input.type = this.options.type || 'text';
 			this.input.setAttribute('wrap', 'off');
@@ -243,6 +253,10 @@ export class InputBox extends Widget {
 		}
 	}
 
+	public get mirrorElement(): HTMLElement {
+		return this.mirror;
+	}
+
 	public get inputElement(): HTMLInputElement {
 		return this.input;
 	}
@@ -274,7 +288,7 @@ export class InputBox extends Widget {
 		return document.activeElement === this.input;
 	}
 
-	public select(range: IRange = null): void {
+	public select(range: IRange | null = null): void {
 		this.input.select();
 
 		if (range) {
@@ -305,6 +319,9 @@ export class InputBox extends Widget {
 
 	public set width(width: number) {
 		this.input.style.width = width + 'px';
+		if (this.mirror) {
+			this.mirror.style.width = width + 'px';
+		}
 	}
 
 	public showMessage(message: IMessage, force?: boolean): void {
@@ -353,7 +370,7 @@ export class InputBox extends Widget {
 	}
 
 	public validate(): boolean {
-		let errorMsg: IMessage = null;
+		let errorMsg: IMessage | null = null;
 
 		if (this.validation) {
 			errorMsg = this.validation(this.value);
@@ -380,15 +397,15 @@ export class InputBox extends Widget {
 		return errorMsg ? errorMsg.type !== MessageType.ERROR : true;
 	}
 
-	private stylesForType(type: MessageType): { border: Color; background: Color } {
+	public stylesForType(type: MessageType | undefined): { border: Color | undefined; background: Color | undefined; foreground: Color | undefined } {
 		switch (type) {
-			case MessageType.INFO: return { border: this.inputValidationInfoBorder, background: this.inputValidationInfoBackground };
-			case MessageType.WARNING: return { border: this.inputValidationWarningBorder, background: this.inputValidationWarningBackground };
-			default: return { border: this.inputValidationErrorBorder, background: this.inputValidationErrorBackground };
+			case MessageType.INFO: return { border: this.inputValidationInfoBorder, background: this.inputValidationInfoBackground, foreground: this.inputValidationInfoForeground };
+			case MessageType.WARNING: return { border: this.inputValidationWarningBorder, background: this.inputValidationWarningBackground, foreground: this.inputValidationWarningForeground };
+			default: return { border: this.inputValidationErrorBorder, background: this.inputValidationErrorBackground, foreground: this.inputValidationErrorForeground };
 		}
 	}
 
-	private classForType(type: MessageType): string {
+	private classForType(type: MessageType | undefined): string {
 		switch (type) {
 			case MessageType.INFO: return 'info';
 			case MessageType.WARNING: return 'warning';
@@ -411,6 +428,10 @@ export class InputBox extends Widget {
 			getAnchor: () => this.element,
 			anchorAlignment: AnchorAlignment.RIGHT,
 			render: (container: HTMLElement) => {
+				if (!this.message) {
+					return null;
+				}
+
 				div = dom.append(container, $('.monaco-inputbox-container'));
 				layout();
 
@@ -426,6 +447,7 @@ export class InputBox extends Widget {
 
 				const styles = this.stylesForType(this.message.type);
 				spanElement.style.backgroundColor = styles.background ? styles.background.toString() : null;
+				spanElement.style.color = styles.foreground ? styles.foreground.toString() : null;
 				spanElement.style.border = styles.border ? `1px solid ${styles.border}` : null;
 
 				dom.append(div, spanElement);
@@ -452,7 +474,7 @@ export class InputBox extends Widget {
 		this.validate();
 		this.updateMirror();
 
-		if (this.state === 'open') {
+		if (this.state === 'open' && this.contextViewProvider) {
 			this.contextViewProvider.layout();
 		}
 	}
@@ -463,9 +485,16 @@ export class InputBox extends Widget {
 		}
 
 		const value = this.value || this.placeholder;
-		let lastCharCode = value.charCodeAt(value.length - 1);
-		let suffix = lastCharCode === 10 ? ' ' : '';
-		this.mirror.textContent = value + suffix;
+		const lastCharCode = value.charCodeAt(value.length - 1);
+		const suffix = lastCharCode === 10 ? ' ' : '';
+		const mirrorTextContent = value + suffix;
+
+		if (mirrorTextContent) {
+			this.mirror.textContent = value + suffix;
+		} else {
+			this.mirror.innerHTML = '&nbsp;';
+		}
+
 		this.layout();
 	}
 
@@ -475,10 +504,13 @@ export class InputBox extends Widget {
 		this.inputBorder = styles.inputBorder;
 
 		this.inputValidationInfoBackground = styles.inputValidationInfoBackground;
+		this.inputValidationInfoForeground = styles.inputValidationInfoForeground;
 		this.inputValidationInfoBorder = styles.inputValidationInfoBorder;
 		this.inputValidationWarningBackground = styles.inputValidationWarningBackground;
+		this.inputValidationWarningForeground = styles.inputValidationWarningForeground;
 		this.inputValidationWarningBorder = styles.inputValidationWarningBorder;
 		this.inputValidationErrorBackground = styles.inputValidationErrorBackground;
+		this.inputValidationErrorForeground = styles.inputValidationErrorForeground;
 		this.inputValidationErrorBorder = styles.inputValidationErrorBorder;
 
 		this.applyStyles();
@@ -518,15 +550,13 @@ export class InputBox extends Widget {
 	public dispose(): void {
 		this._hideMessage();
 
-		this.element = null;
-		this.input = null;
-		this.contextViewProvider = null;
+		this.element = null!; // StrictNullOverride: nulling out ok in dispose
+		this.input = null!; // StrictNullOverride: nulling out ok in dispose
+		this.contextViewProvider = undefined;
 		this.message = null;
-		this.placeholder = null;
-		this.ariaLabel = null;
-		this.validation = null;
+		this.validation = undefined;
 		this.state = null;
-		this.actionbar = null;
+		this.actionbar = undefined;
 
 		super.dispose();
 	}
@@ -540,7 +570,7 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 
 	private readonly history: HistoryNavigator<string>;
 
-	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider, options: IHistoryInputOptions) {
+	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider | undefined, options: IHistoryInputOptions) {
 		super(container, contextViewProvider, options);
 		this.history = new HistoryNavigator<string>(options.history, 100);
 	}
@@ -591,7 +621,7 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 		this.history.clear();
 	}
 
-	private getCurrentValue(): string {
+	private getCurrentValue(): string | null {
 		let currentValue = this.history.current();
 		if (!currentValue) {
 			currentValue = this.history.last();
@@ -600,11 +630,11 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 		return currentValue;
 	}
 
-	private getPreviousValue(): string {
+	private getPreviousValue(): string | null {
 		return this.history.previous() || this.history.first();
 	}
 
-	private getNextValue(): string {
+	private getNextValue(): string | null {
 		return this.history.next() || this.history.last();
 	}
 }

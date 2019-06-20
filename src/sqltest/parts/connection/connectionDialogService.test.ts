@@ -3,16 +3,15 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
-import { ConnectionDialogService } from 'sql/parts/connection/connectionDialog/connectionDialogService';
-import { ConnectionDialogWidget } from 'sql/parts/connection/connectionDialog/connectionDialogWidget';
-import { ConnectionManagementService } from 'sql/parts/connection/common/connectionManagementService';
-import { ConnectionType, IConnectableInput, IConnectionResult, INewConnectionParams } from 'sql/parts/connection/common/connectionManagement';
+import { ConnectionDialogService } from 'sql/workbench/services/connection/browser/connectionDialogService';
+import { ConnectionDialogWidget } from 'sql/workbench/services/connection/browser/connectionDialogWidget';
+import { ConnectionManagementService } from 'sql/platform/connection/common/connectionManagementService';
+import { ConnectionType, IConnectableInput, IConnectionResult, INewConnectionParams } from 'sql/platform/connection/common/connectionManagement';
 import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
 import { ErrorMessageServiceStub } from 'sqltest/stubs/errorMessageServiceStub';
 
 import * as TypeMoq from 'typemoq';
+import { TestStorageService } from 'vs/workbench/test/workbenchTestServices';
 
 suite('ConnectionDialogService tests', () => {
 
@@ -24,7 +23,7 @@ suite('ConnectionDialogService tests', () => {
 		let errorMessageService = getMockErrorMessageService();
 		connectionDialogService = new ConnectionDialogService(undefined, undefined, undefined, errorMessageService.object,
 			undefined, undefined, undefined);
-		mockConnectionManagementService = TypeMoq.Mock.ofType(ConnectionManagementService, TypeMoq.MockBehavior.Strict, {}, {});
+		mockConnectionManagementService = TypeMoq.Mock.ofType(ConnectionManagementService, TypeMoq.MockBehavior.Strict, {}, {}, new TestStorageService());
 		(connectionDialogService as any)._connectionManagementService = mockConnectionManagementService.object;
 		mockConnectionDialog = TypeMoq.Mock.ofType(ConnectionDialogWidget, TypeMoq.MockBehavior.Strict,
 			undefined,

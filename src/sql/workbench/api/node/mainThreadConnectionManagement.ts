@@ -2,19 +2,22 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { SqlExtHostContext, SqlMainContext, ExtHostConnectionManagementShape, MainThreadConnectionManagementShape } from 'sql/workbench/api/node/sqlExtHost.protocol';
-import * as sqlops from 'sqlops';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
-import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
-import { IConnectionManagementService, IConnectionDialogService } from 'sql/parts/connection/common/connectionManagement';
-import { IObjectExplorerService } from 'sql/parts/objectExplorer/common/objectExplorerService';
+import * as azdata from 'azdata';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
+import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
+import { IConnectionManagementService, ConnectionType } from 'sql/platform/connection/common/connectionManagement';
+import { IObjectExplorerService } from 'sql/workbench/services/objectExplorer/common/objectExplorerService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import * as TaskUtilities from 'sql/workbench/common/taskUtilities';
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
 import { dispose, IDisposable } from 'vs/base/common/lifecycle';
 import { isUndefinedOrNull } from 'vs/base/common/types';
+import { generateUuid } from 'vs/base/common/uuid';
+import { ICapabilitiesService } from 'sql/platform/capabilities/common/capabilitiesService';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
+import { IConnectionDialogService } from 'sql/workbench/services/connection/common/connectionDialogService';
 
 @extHostNamedCustomer(SqlMainContext.MainThreadConnectionManagement)
 export class MainThreadConnectionManagement implements MainThreadConnectionManagementShape {
@@ -28,6 +31,7 @@ export class MainThreadConnectionManagement implements MainThreadConnectionManag
 		@IObjectExplorerService private _objectExplorerService: IObjectExplorerService,
 		@IEditorService private _workbenchEditorService: IEditorService,
 		@IConnectionDialogService private _connectionDialogService: IConnectionDialogService,
+		@ICapabilitiesService private _capabilitiesService: ICapabilitiesService
 	) {
 		if (extHostContext) {
 			this._proxy = extHostContext.getProxy(SqlExtHostContext.ExtHostConnectionManagement);
@@ -39,11 +43,11 @@ export class MainThreadConnectionManagement implements MainThreadConnectionManag
 		this._toDispose = dispose(this._toDispose);
 	}
 
-	public $getActiveConnections(): Thenable<sqlops.connection.Connection[]> {
+	public $getActiveConnections(): Thenable<azdata.connection.Connection[]> {
 		return Promise.resolve(this._connectionManagementService.getActiveConnections().map(profile => this.convertConnection(profile)));
 	}
 
-	public $getCurrentConnection(): Thenable<sqlops.connection.Connection> {
+	public $getCurrentConnection(): Thenable<azdata.connection.Connection> {
 		return Promise.resolve(this.convertConnection(TaskUtilities.getCurrentGlobalConnection(this._objectExplorerService, this._connectionManagementService, this._workbenchEditorService, true)));
 	}
 
@@ -51,16 +55,28 @@ export class MainThreadConnectionManagement implements MainThreadConnectionManag
 		return Promise.resolve(this._connectionManagementService.getActiveConnectionCredentials(connectionId));
 	}
 
+	public $getServerInfo(connectionId: string): Thenable<azdata.ServerInfo> {
+		return Promise.resolve(this._connectionManagementService.getServerInfo(connectionId));
+	}
 
-	public async $openConnectionDialog(providers: string[], initialConnectionProfile?: IConnectionProfile, connectionCompletionOptions?: sqlops.IConnectionCompletionOptions): Promise<sqlops.connection.Connection> {
-		let connectionProfile = await this._connectionDialogService.openDialogAndWait(this._connectionManagementService, { connectionType: 1, providers: providers }, initialConnectionProfile);
-	    const connection = connectionProfile ? {
+	public async $openConnectionDialog(providers: string[], initialConnectionProfile?: IConnectionProfile, connectionCompletionOptions?: azdata.IConnectionCompletionOptions): Promise<azdata.connection.Connection> {
+		// Here we default to ConnectionType.editor which saves the connecton in the connection store by default
+		let connectionType = ConnectionType.editor;
+
+		// If the API call explicitly set saveConnection to false, set it to ConnectionType.extension
+		// which doesn't save the connection by default
+		if (connectionCompletionOptions && !connectionCompletionOptions.saveConnection) {
+			connectionType = ConnectionType.temporary;
+		}
+		let connectionProfile = await this._connectionDialogService.openDialogAndWait(this._connectionManagementService,
+			{ connectionType: connectionType, providers: providers }, initialConnectionProfile, undefined);
+		const connection = connectionProfile ? {
 			connectionId: connectionProfile.id,
 			options: connectionProfile.options,
 			providerName: connectionProfile.providerName
 		} : undefined;
 
-		if (connectionCompletionOptions) {
+		if (connectionCompletionOptions && connectionCompletionOptions.saveConnection) {
 			// Somehow, connectionProfile.saveProfile is false even if initialConnectionProfile.saveProfile is true, reset the flag here.
 			connectionProfile.saveProfile = initialConnectionProfile.saveProfile;
 			await this._connectionManagementService.connectAndSaveProfile(connectionProfile, undefined, {
@@ -71,7 +87,6 @@ export class MainThreadConnectionManagement implements MainThreadConnectionManag
 				showFirewallRuleOnError: isUndefinedOrNull(connectionCompletionOptions.showFirewallRuleOnError) ? true : connectionCompletionOptions.showFirewallRuleOnError
 			});
 		}
-
 		return connection;
 	}
 
@@ -89,16 +104,35 @@ export class MainThreadConnectionManagement implements MainThreadConnectionManag
 		return Promise.resolve(this._connectionManagementService.getConnectionUriFromId(connectionId));
 	}
 
-	private convertConnection(profile: IConnectionProfile): sqlops.connection.Connection {
+	private convertConnection(profile: IConnectionProfile): azdata.connection.Connection {
 		if (!profile) {
 			return undefined;
 		}
 		profile = this._connectionManagementService.removeConnectionProfileCredentials(profile);
-		let connection: sqlops.connection.Connection = {
+		let connection: azdata.connection.Connection = {
 			providerName: profile.providerName,
 			connectionId: profile.id,
 			options: profile.options
 		};
 		return connection;
+	}
+
+	public $connect(connectionProfile: IConnectionProfile, saveConnection: boolean = true, showDashboard: boolean = true): Thenable<azdata.ConnectionResult> {
+		let profile = new ConnectionProfile(this._capabilitiesService, connectionProfile);
+		profile.id = generateUuid();
+		return this._connectionManagementService.connectAndSaveProfile(profile, undefined, {
+			saveTheConnection: saveConnection,
+			showDashboard: showDashboard,
+			params: undefined,
+			showConnectionDialogOnError: true,
+			showFirewallRuleOnError: true
+		}).then((result) => {
+			return <azdata.ConnectionResult>{
+				connected: result.connected,
+				connectionId: result.connected ? profile.id : undefined,
+				errorCode: result.errorCode,
+				errorMessage: result.errorMessage
+			};
+		});
 	}
 }

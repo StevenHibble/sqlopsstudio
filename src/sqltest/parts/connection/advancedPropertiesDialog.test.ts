@@ -3,19 +3,18 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import { OptionsDialog } from 'sql/base/browser/ui/modal/optionsDialog';
-import { AdvancedPropertiesController } from 'sql/parts/connection/connectionDialog/advancedPropertiesController';
-import { Builder, $ } from 'vs/base/browser/builder';
+import { OptionsDialog } from 'sql/workbench/browser/modal/optionsDialog';
+import { AdvancedPropertiesController } from 'sql/workbench/parts/connection/browser/advancedPropertiesController';
 import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
 import * as assert from 'assert';
 import { ServiceOptionType } from 'sql/workbench/api/common/sqlExtHostTypes';
+import { $ } from 'vs/base/browser/dom';
 
 suite('Advanced properties dialog tests', () => {
-	var advancedController: AdvancedPropertiesController;
-	var providerOptions: sqlops.ConnectionOption[];
+	let advancedController: AdvancedPropertiesController;
+	let providerOptions: azdata.ConnectionOption[];
 
 	setup(() => {
 		advancedController = new AdvancedPropertiesController(() => { }, null);
@@ -84,9 +83,8 @@ suite('Advanced properties dialog tests', () => {
 	});
 
 	test('advanced dialog should open when showDialog in advancedController get called', () => {
-		var isAdvancedDialogCalled = false;
+		let isAdvancedDialogCalled = false;
 		let options: { [name: string]: any } = {};
-		let builder: Builder = $().div();
 		let advanceDialog = TypeMoq.Mock.ofType(OptionsDialog, TypeMoq.MockBehavior.Strict,
 			'', // title
 			'', // name
@@ -94,6 +92,7 @@ suite('Advanced properties dialog tests', () => {
 			undefined, // partsService
 			undefined, // themeService
 			undefined, // Context view service
+			undefined, // instantiation Service
 			undefined, // telemetry service
 			new ContextKeyServiceStub() // contextkeyservice
 		);
@@ -101,7 +100,7 @@ suite('Advanced properties dialog tests', () => {
 			isAdvancedDialogCalled = true;
 		});
 		advancedController.advancedDialog = advanceDialog.object;
-		advancedController.showDialog(providerOptions, builder.getHTMLElement(), options);
+		advancedController.showDialog(providerOptions, options);
 		assert.equal(isAdvancedDialogCalled, true);
 	});
 });

@@ -13,13 +13,12 @@ declare module 'sqlops' {
 	/**
 	 * Supports defining a model that can be instantiated as a view in the UI
 	 * @export
-	 * @interface ModelBuilder
 	 */
 	export interface ModelBuilder {
 		navContainer(): ContainerBuilder<NavContainer, any, any>;
 		divContainer(): DivBuilder;
 		flexContainer(): FlexBuilder;
-		dom(): ComponentBuilder<DomComponent>
+		dom(): ComponentBuilder<DomComponent>;
 		card(): ComponentBuilder<CardComponent>;
 		inputBox(): ComponentBuilder<InputBoxComponent>;
 		checkBox(): ComponentBuilder<CheckBoxComponent>;
@@ -40,6 +39,7 @@ declare module 'sqlops' {
 		toolbarContainer(): ToolbarBuilder;
 		loadingComponent(): LoadingComponentBuilder;
 		fileBrowserTree(): ComponentBuilder<FileBrowserTreeComponent>;
+		hyperlink(): ComponentBuilder<HyperlinkComponent>;
 	}
 
 	export interface TreeComponentDataProvider<T> extends vscode.TreeDataProvider<T> {
@@ -47,8 +47,8 @@ declare module 'sqlops' {
 	}
 
 	export interface NodeCheckedEventParameters<T> {
-		element: T,
-		checked: boolean
+		element: T;
+		checked: boolean;
 	}
 
 	export interface TreeComponentView<T> extends vscode.Disposable {
@@ -66,6 +66,7 @@ declare module 'sqlops' {
 		withProperties<U>(properties: U): ComponentBuilder<T>;
 		withValidation(validation: (component: T) => boolean): ComponentBuilder<T>;
 	}
+
 	export interface ContainerBuilder<T extends Component, TLayout, TItemLayout> extends ComponentBuilder<T> {
 		withLayout(layout: TLayout): ContainerBuilder<T, TLayout, TItemLayout>;
 		withItems(components: Array<Component>, itemLayout?: TItemLayout): ContainerBuilder<T, TLayout, TItemLayout>;
@@ -115,7 +116,7 @@ declare module 'sqlops' {
 		 * Creates a collection of child components and adds them all to this container
 		 *
 		 * @param formComponents the definitions
-		 * @param {*} [itemLayout] Optional layout for the child items
+		 * @param [itemLayout] Optional layout for the child items
 		 */
 		addFormItems(formComponents: Array<FormComponent | FormComponentGroup>, itemLayout?: FormItemLayout): void;
 
@@ -123,7 +124,7 @@ declare module 'sqlops' {
 		 * Creates a child component and adds it to this container.
 		 *
 		 * @param formComponent the component to be added
-		 * @param {*} [itemLayout] Optional layout for this child item
+		 * @param [itemLayout] Optional layout for this child item
 		 */
 		addFormItem(formComponent: FormComponent | FormComponentGroup, itemLayout?: FormItemLayout): void;
 
@@ -133,11 +134,10 @@ declare module 'sqlops' {
 		 * @param index index to insert the component to
 		 * @param itemLayout Item Layout
 		 */
-		insertFormItem(formComponent: FormComponent | FormComponentGroup, index?: number, itemLayout?: FormItemLayout);
+		insertFormItem(formComponent: FormComponent | FormComponentGroup, index?: number, itemLayout?: FormItemLayout): void;
 
 		/**
 		 * Removes a from item from the from
-		 * @param formComponent
 		 */
 		removeFormItem(formComponent: FormComponent | FormComponentGroup): boolean;
 	}
@@ -148,18 +148,16 @@ declare module 'sqlops' {
 		/**
 		 * Sends any updated properties of the component to the UI
 		 *
-		 * @returns {Thenable<void>} Thenable that completes once the update
+		 * @returns henable that completes once the update
 		 * has been applied in the UI
-		 * @memberof Component
 		 */
 		updateProperties(properties: { [key: string]: any }): Thenable<void>;
 
 		/**
 		 * Sends an updated property of the component to the UI
 		 *
-		 * @returns {Thenable<void>} Thenable that completes once the update
+		 * @returns Thenable that completes once the update
 		 * has been applied in the UI
-		 * @memberof Component
 		 */
 		updateProperty(key: string, value: any): Thenable<void>;
 
@@ -225,7 +223,7 @@ declare module 'sqlops' {
 		 * Creates a collection of child components and adds them all to this container
 		 *
 		 * @param itemConfigs the definitions
-		 * @param {*} [itemLayout] Optional layout for the child items
+		 * @param [itemLayout] Optional layout for the child items
 		 */
 		addItems(itemConfigs: Array<Component>, itemLayout?: TItemLayout): void;
 
@@ -233,8 +231,8 @@ declare module 'sqlops' {
 		 * Creates a child component and adds it to this container.
 		 * Adding component to multiple containers is not supported
 		 *
-		 * @param {Component} component the component to be added
-		 * @param {*} [itemLayout] Optional layout for this child item
+		 * @param component the component to be added
+		 * @param [itemLayout] Optional layout for this child item
 		 */
 		addItem(component: Component, itemLayout?: TItemLayout): void;
 
@@ -243,7 +241,7 @@ declare module 'sqlops' {
 		 * Adding component to multiple containers is not supported
 		 * @param component the component to be added
 		 * @param index the index to insert the component to
-		 * @param {*} [itemLayout] Optional layout for this child item
+		 * @param [itemLayout] Optional layout for this child item
 		 */
 		insertItem(component: Component, index: number, itemLayout?: TItemLayout): void;
 
@@ -256,7 +254,7 @@ declare module 'sqlops' {
 		/**
 		 * Defines the layout for this container
 		 *
-		 * @param {TLayout} layout object
+		 * @param layout object
 		 */
 		setLayout(layout: TLayout): void;
 	}
@@ -348,6 +346,8 @@ declare module 'sqlops' {
 	export interface GroupLayout {
 		width?: number | string;
 		header?: string;
+		collapsible?: boolean;
+		collapsed?: boolean;
 	}
 
 	export interface GroupItemLayout {
@@ -433,7 +433,8 @@ declare module 'sqlops' {
 
 	export enum CardType {
 		VerticalButton = 'VerticalButton',
-		Details = 'Details'
+		Details = 'Details',
+		ListItem = 'ListItem'
 	}
 
 	/**
@@ -444,6 +445,7 @@ declare module 'sqlops' {
 		label: string;
 		value?: string;
 		actions?: ActionDescriptor[];
+		descriptions?: string[];
 		status?: StatusIndicator;
 
 		/**
@@ -497,6 +499,9 @@ declare module 'sqlops' {
 
 	export interface TableColumn {
 		value: string;
+		width?: number;
+		cssClass?: string;
+		toolTip?: string;
 	}
 
 	export interface TableComponentProperties extends ComponentProperties {
@@ -535,12 +540,24 @@ declare module 'sqlops' {
 
 	export interface TextComponentProperties {
 		value?: string;
+		links?: LinkArea[];
+	}
+
+	export interface LinkArea {
+		text: string;
+		url: string;
+	}
+
+	export interface HyperlinkComponentProperties extends ComponentProperties {
+		label: string;
+		url: string;
 	}
 
 	export interface DropDownProperties extends ComponentProperties {
 		value?: string | CategoryValue;
 		values?: string[] | CategoryValue[];
 		editable?: boolean;
+		fireOnTextChange?: boolean;
 	}
 
 	export interface DeclarativeTableColumn {
@@ -635,8 +652,13 @@ declare module 'sqlops' {
 
 	}
 
-	export interface TextComponent extends Component {
+	export interface TextComponent extends Component, ComponentProperties {
 		value: string;
+	}
+
+	export interface HyperlinkComponent extends Component, HyperlinkComponentProperties {
+		label: string;
+		url: string;
 	}
 
 	export interface InputBoxComponent extends Component, InputBoxProperties {
@@ -834,12 +856,15 @@ declare module 'sqlops' {
 	}
 
 	export namespace window {
+		/**
+		 * @deprecated this namespace has been deprecated and will be removed in a future release, please use the methods under sqlops.window namespace.
+		 */
 		export namespace modelviewdialog {
 			/**
 			 * Create a dialog with the given title
 			 * @param title The title of the dialog, displayed at the top
 			 */
-			export function createDialog(title: string): Dialog;
+			export function createDialog(title: string, dialogName?: string): Dialog;
 
 			/**
 			 * Create a dialog tab which can be included as part of the content of a dialog
@@ -922,13 +947,13 @@ declare module 'sqlops' {
 				/**
 				 * The title of the dialog
 				 */
-				title: string,
+				title: string;
 
 				/**
 				 * The content of the dialog. If multiple tabs are given they will be displayed with tabs
 				 * If a string is given, it should be the ID of the dialog's model view content
 				 */
-				content: string | DialogTab[],
+				content: string | DialogTab[];
 
 				/**
 				 * The ok button
@@ -950,6 +975,12 @@ declare module 'sqlops' {
 				 * undefined or the text is empty or undefined. The default level is error.
 				 */
 				message: DialogMessage;
+
+				/**
+				 * Set the dialog name when opening
+				 * the dialog for telemetry
+				 */
+				dialogName?: string;
 
 				/**
 				 * Register a callback that will be called when the user tries to click done. Only
@@ -1005,12 +1036,12 @@ declare module 'sqlops' {
 				/**
 				 * The page number that the wizard changed from
 				 */
-				lastPage: number,
+				lastPage: number;
 
 				/**
 				 * The new page number or undefined if the user is closing the wizard
 				 */
-				newPage: number
+				newPage: number;
 			}
 
 			export interface WizardPage extends ModelViewPanel {
@@ -1147,7 +1178,7 @@ declare module 'sqlops' {
 				 * Set the informational message shown in the wizard. Hidden when the message is
 				 * undefined or the text is empty or undefined. The default level is error.
 				 */
-				message: DialogMessage
+				message: DialogMessage;
 
 				/**
 				 * Register an operation to run in the background when the wizard is done
@@ -1155,6 +1186,338 @@ declare module 'sqlops' {
 				 */
 				registerOperation(operationInfo: BackgroundOperationInfo): void;
 			}
+		}
+
+		/**
+		 * creates a web view dialog
+		 */
+		export function createWebViewDialog(title: string): ModalDialog;
+
+		/**
+		 * Create a dialog with the given title
+		 * @param title The title of the dialog, displayed at the top
+		 */
+		export function createModelViewDialog(title: string, dialogName?: string): Dialog;
+
+		/**
+		 * Create a dialog tab which can be included as part of the content of a dialog
+		 * @param title The title of the page, displayed on the tab to select the page
+		 */
+		export function createTab(title: string): DialogTab;
+
+		/**
+		 * Create a button which can be included in a dialog
+		 * @param label The label of the button
+		 */
+		export function createButton(label: string): Button;
+
+		/**
+		 * Opens the given dialog if it is not already open
+		 */
+		export function openDialog(dialog: Dialog): void;
+
+		/**
+		 * Closes the given dialog if it is open
+		 */
+		export function closeDialog(dialog: Dialog): void;
+
+		/**
+		 * Create a wizard page with the given title, for inclusion in a wizard
+		 * @param title The title of the page
+		 */
+		export function createWizardPage(title: string): WizardPage;
+
+		/**
+		 * Create a wizard with the given title and pages
+		 * @param title The title of the wizard
+		 */
+		export function createWizard(title: string): Wizard;
+
+		/**
+		 * Used to control whether a message in a dialog/wizard is displayed as an error,
+		 * warning, or informational message. Default is error.
+		 */
+		export enum MessageLevel {
+			Error = 0,
+			Warning = 1,
+			Information = 2
+		}
+
+		/**
+		 * A message shown in a dialog. If the level is not set it defaults to error.
+		 */
+		export type DialogMessage = {
+			readonly text: string,
+			readonly description?: string,
+			readonly level?: MessageLevel
+		};
+
+		export interface ModelViewPanel {
+			/**
+			 * Register model view content for the dialog.
+			 * Doesn't do anything if model view is already registered
+			 */
+			registerContent(handler: (view: ModelView) => Thenable<void>): void;
+
+			/**
+			 * Returns the model view content if registered. Returns undefined if model review is not registered
+			 */
+			readonly modelView: ModelView;
+
+			/**
+			 * Whether the panel's content is valid
+			 */
+			readonly valid: boolean;
+
+			/**
+			 * Fired whenever the panel's valid property changes
+			 */
+			readonly onValidityChanged: vscode.Event<boolean>;
+		}
+
+		// Model view dialog classes
+		export interface Dialog extends ModelViewPanel {
+			/**
+			 * The title of the dialog
+			 */
+			title: string;
+
+			/**
+			 * The content of the dialog. If multiple tabs are given they will be displayed with tabs
+			 * If a string is given, it should be the ID of the dialog's model view content
+			 */
+			content: string | DialogTab[];
+
+			/**
+			 * The ok button
+			 */
+			okButton: Button;
+
+			/**
+			 * The cancel button
+			 */
+			cancelButton: Button;
+
+			/**
+			 * Any additional buttons that should be displayed
+			 */
+			customButtons: Button[];
+
+			/**
+			 * Set the informational message shown in the dialog. Hidden when the message is
+			 * undefined or the text is empty or undefined. The default level is error.
+			 */
+			message: DialogMessage;
+
+			/**
+			 * Set the dialog name when opening
+			 * the dialog for telemetry
+			 */
+			dialogName?: string;
+
+			/**
+			 * Register a callback that will be called when the user tries to click done. Only
+			 * one callback can be registered at once, so each registration call will clear
+			 * the previous registration.
+			 * @param validator The callback that gets executed when the user tries to click
+			 * done. Return true to allow the dialog to close or false to block it from closing
+			 */
+			registerCloseValidator(validator: () => boolean | Thenable<boolean>): void;
+
+			/**
+			 * Register an operation to run in the background when the dialog is done
+			 * @param operationInfo Operation Information
+			 */
+			registerOperation(operationInfo: BackgroundOperationInfo): void;
+		}
+
+		export interface DialogTab extends ModelViewPanel {
+			/**
+			 * The title of the tab
+			 */
+			title: string;
+
+			/**
+			 * A string giving the ID of the tab's model view content
+			 */
+			content: string;
+		}
+
+		export interface Button {
+			/**
+			 * The label displayed on the button
+			 */
+			label: string;
+
+			/**
+			 * Whether the button is enabled
+			 */
+			enabled: boolean;
+
+			/**
+			 * Whether the button is hidden
+			 */
+			hidden: boolean;
+
+			/**
+			 * Raised when the button is clicked
+			 */
+			readonly onClick: vscode.Event<void>;
+		}
+
+		export interface WizardPageChangeInfo {
+			/**
+			 * The page number that the wizard changed from
+			 */
+			lastPage: number;
+
+			/**
+			 * The new page number or undefined if the user is closing the wizard
+			 */
+			newPage: number;
+		}
+
+		export interface WizardPage extends ModelViewPanel {
+			/**
+			 * The title of the page
+			 */
+			title: string;
+
+			/**
+			 * A string giving the ID of the page's model view content
+			 */
+			content: string;
+
+			/**
+			 * Any additional buttons that should be displayed while the page is open
+			 */
+			customButtons: Button[];
+
+			/**
+			 * Whether the page is enabled. If the page is not enabled, the user will not be
+			 * able to advance to it. Defaults to true.
+			 */
+			enabled: boolean;
+
+			/**
+			 * An optional description for the page. If provided it will be displayed underneath the page title.
+			 */
+			description: string;
+		}
+
+		export interface Wizard {
+			/**
+			 * The title of the wizard
+			 */
+			title: string;
+
+			/**
+			 * The wizard's pages. Pages can be added/removed while the dialog is open by using
+			 * the addPage and removePage methods
+			 */
+			pages: WizardPage[];
+
+			/**
+			 * The index in the pages array of the active page, or undefined if the wizard is
+			 * not currently visible
+			 */
+			readonly currentPage: number;
+
+			/**
+			 * The done button
+			 */
+			doneButton: Button;
+
+			/**
+			 * The cancel button
+			 */
+			cancelButton: Button;
+
+			/**
+			 * The generate script button
+			 */
+			generateScriptButton: Button;
+
+			/**
+			 * The next button
+			 */
+			nextButton: Button;
+
+			/**
+			 * The back button
+			 */
+			backButton: Button;
+
+			/**
+			 * Any additional buttons that should be displayed for all pages of the dialog. If
+			 * buttons are needed for specific pages they can be added using the customButtons
+			 * property on each page.
+			 */
+			customButtons: Button[];
+
+			/**
+			 * When set to false page titles and descriptions will not be displayed at the top
+			 * of each wizard page. The default is true.
+			 */
+			displayPageTitles: boolean;
+
+			/**
+			 * Event fired when the wizard's page changes, containing information about the
+			 * previous page and the new page
+			 */
+			onPageChanged: vscode.Event<WizardPageChangeInfo>;
+
+			/**
+			 * Add a page to the wizard at the given index
+			 * @param page The page to add
+			 * @param index The index in the pages array to add the page at, or undefined to
+			 * add it at the end
+			 */
+			addPage(page: WizardPage, index?: number): Thenable<void>;
+
+			/**
+			 * Remove the page at the given index from the wizard
+			 * @param index The index in the pages array to remove
+			 */
+			removePage(index: number): Thenable<void>;
+
+			/**
+			 * Go to the page at the given index in the pages array.
+			 * @param index The index of the page to go to
+			 */
+			setCurrentPage(index: number): Thenable<void>;
+
+			/**
+			 * Open the wizard. Does nothing if the wizard is already open.
+			 */
+			open(): Thenable<void>;
+
+			/**
+			 * Close the wizard. Does nothing if the wizard is not open.
+			 */
+			close(): Thenable<void>;
+
+			/**
+			 * Register a callback that will be called when the user tries to navigate by
+			 * changing pages or clicking done. Only one callback can be registered at once, so
+			 * each registration call will clear the previous registration.
+			 * @param validator The callback that gets executed when the user tries to
+			 * navigate. Return true to allow the navigation to proceed, or false to
+			 * cancel it.
+			 */
+			registerNavigationValidator(validator: (pageChangeInfo: WizardPageChangeInfo) => boolean | Thenable<boolean>): void;
+
+			/**
+			 * Set the informational message shown in the wizard. Hidden when the message is
+			 * undefined or the text is empty or undefined. The default level is error.
+			 */
+			message: DialogMessage;
+
+			/**
+			 * Register an operation to run in the background when the wizard is done
+			 * @param operationInfo Operation Information
+			 */
+			registerOperation(operationInfo: BackgroundOperationInfo): void;
 		}
 	}
 
@@ -1165,14 +1528,14 @@ declare module 'sqlops' {
 
 		/**
 		 * Make connection for the query editor
-		 * @param {string} fileUri file URI for the query editor
-		 * @param {string} connectionId connection ID
+		 * @param fileUri file URI for the query editor
+		 * @param connectionId connection ID
 		 */
 		export function connect(fileUri: string, connectionId: string): Thenable<void>;
 
 		/**
 		 * Run query if it is a query editor and it is already opened.
-		 * @param {string} fileUri file URI for the query editor
+		 * @param fileUri file URI for the query editor
 		 */
 		export function runQuery(fileUri: string): void;
 	}
@@ -1187,7 +1550,7 @@ declare module 'sqlops' {
 		 */
 		export function createModelViewEditor(title: string, options?: ModelViewEditorOptions): ModelViewEditor;
 
-		export interface ModelViewEditor extends window.modelviewdialog.ModelViewPanel {
+		export interface ModelViewEditor extends window.ModelViewPanel {
 			/**
 			 * `true` if there are unpersisted changes.
 			 * This is editable to support extensions updating the dirty status.
@@ -1203,7 +1566,7 @@ declare module 'sqlops' {
 			 * Registers a save handler for this editor. This will be called if [supportsSave](#ModelViewEditorOptions.supportsSave)
 			 * is set to true and the editor is marked as dirty
 			 */
-			registerSaveHandler(handler: () => Thenable<boolean>);
+			registerSaveHandler(handler: () => Thenable<boolean>): void;
 		}
 	}
 
@@ -1232,7 +1595,11 @@ declare module 'sqlops' {
 		QueryProvider = 'QueryProvider',
 		AdminServicesProvider = 'AdminServicesProvider',
 		AgentServicesProvider = 'AgentServicesProvider',
-		CapabilitiesProvider = 'CapabilitiesProvider'
+		CapabilitiesProvider = 'CapabilitiesProvider',
+		DacFxServicesProvider = 'DacFxServicesProvider',
+		SchemaCompareServicesProvider = 'SchemaCompareServicesProvider',
+		ObjectExplorerNodeProvider = 'ObjectExplorerNodeProvider',
+		IconProvider = 'IconProvider'
 	}
 
 	export namespace dataprotocol {
@@ -1330,7 +1697,7 @@ declare module 'sqlops' {
 		/**
 		 * The actual operation to execute
 		 */
-		operation: (operation: BackgroundOperation) => void
+		operation: (operation: BackgroundOperation) => void;
 	}
 
 	namespace tasks {
@@ -1342,11 +1709,18 @@ declare module 'sqlops' {
 
 	}
 
+	export interface ConnectionResult {
+		connected: boolean;
+		connectionId: string;
+		errorMessage: string;
+		errorCode: number;
+	}
+
 	export namespace connection {
 		/**
 		 * List the databases that can be accessed from the given connection
-		 * @param {string} connectionId The ID of the connection
-		 * @returns {string[]} An list of names of databases
+		 * @param connectionId The ID of the connection
+		 * @returns An list of names of databases
 		 */
 		export function listDatabases(connectionId: string): Thenable<string[]>;
 
@@ -1361,637 +1735,13 @@ declare module 'sqlops' {
 		/**
 		 * Opens the connection dialog, calls the callback with the result. If connection was successful
 		 * returns the connection otherwise returns undefined
-		 * @param callback
 		 */
 		export function openConnectionDialog(providers?: string[], initialConnectionProfile?: IConnectionProfile, connectionCompletionOptions?: IConnectionCompletionOptions): Thenable<connection.Connection>;
+
+		/**
+		 * Opens the connection and add it to object explorer and opens the dashboard and returns the ConnectionResult
+		 * @param connectionProfile connection profile
+		 */
+		export function connect(connectionProfile: IConnectionProfile, saveConnection?: boolean, showDashboard?: boolean): Thenable<ConnectionResult>;
 	}
-
-	export namespace nb {
-		export function registerNotebookProvider(provider: NotebookProvider): vscode.Disposable;
-
-		export interface NotebookProvider {
-			readonly providerId: string;
-			getNotebookManager(notebookUri: vscode.Uri): Thenable<NotebookManager>;
-			handleNotebookClosed(notebookUri: vscode.Uri): void;
-		}
-
-		export interface NotebookManager {
-			/**
-			 * Manages reading and writing contents to/from files.
-			 * Files may be local or remote, with this manager giving them a chance to convert and migrate
-			 * from specific notebook file types to and from a standard type for this UI
-			 */
-			readonly contentManager: ContentManager;
-			/**
-			 * A SessionManager that handles starting, stopping and handling notifications around sessions.
-			 * Each notebook has 1 session associated with it, and the session is responsible
-			 * for kernel management
-			 */
-			readonly sessionManager: SessionManager;
-			/**
-			 * (Optional) ServerManager to handle server lifetime management operations.
-			 * Depending on the implementation this may not be needed.
-			 */
-			readonly serverManager?: ServerManager;
-		}
-
-		/**
-		 * Defines the contracts needed to manage the lifetime of a notebook server.
-		 */
-		export interface ServerManager {
-			/**
-			 * Indicates if the server is started at the current time
-			 */
-			readonly isStarted: boolean;
-
-			/**
-			 * Event sent when the server has started. This can be used to query
-			 * the manager for server settings
-			 */
-			readonly onServerStarted: vscode.Event<void>;
-
-			/**
-			 * Starts the server. Some server types may not support or require this.
-			 * Should no-op if server is already started
-			 */
-			startServer(): Thenable<void>;
-
-			/**
-			 * Stops the server. Some server types may not support or require this
-			 */
-			stopServer(): Thenable<void>;
-		}
-
-		//#region Content APIs
-		/**
-		 * Handles interacting with file and folder contents
-		 */
-		export interface ContentManager {
-			/* Reads contents from a Uri representing a local or remote notebook and returns a
-			 * JSON object containing the cells and metadata about the notebook
-			 */
-			getNotebookContents(notebookUri: vscode.Uri): Thenable<INotebook>;
-
-			/**
-			 * Save a file.
-			 *
-			 * @param notebookUri - The desired file path.
-			 *
-			 * @param notebook - notebook to be saved.
-			 *
-			 * @returns A thenable which resolves with the file content model when the
-			 *   file is saved.
-			 */
-			save(notebookUri: vscode.Uri, notebook: INotebook): Thenable<INotebook>;
-		}
-
-		export interface INotebook {
-
-			readonly cells: ICell[];
-			readonly metadata: INotebookMetadata;
-			readonly nbformat: number;
-			readonly nbformat_minor: number;
-		}
-
-		export interface INotebookMetadata {
-			kernelspec: IKernelInfo;
-			language_info?: ILanguageInfo;
-		}
-
-		export interface IKernelInfo {
-			name: string;
-			language?: string;
-			display_name?: string;
-		}
-
-		export interface ILanguageInfo {
-			name: string;
-			version: string;
-			mimetype?: string;
-			codemirror_mode?: string | ICodeMirrorMode;
-		}
-
-		export interface ICodeMirrorMode {
-			name: string;
-			version: string;
-		}
-
-		export interface ICell {
-			cell_type: CellType;
-			source: string | string[];
-			metadata: {
-				language?: string;
-			};
-			execution_count: number;
-			outputs?: ICellOutput[];
-		}
-
-		export type CellType = 'code' | 'markdown' | 'raw';
-
-		export interface ICellOutput {
-			output_type: OutputType;
-		}
-		export interface IStreamResult extends ICellOutput {
-			/**
-			 * Stream output field defining the stream name, for example stdout
-			 */
-			name: string;
-			/**
-			 * Stream output field defining the multiline stream text
-			 */
-			text: string | Buffer;
-		}
-		export interface IDisplayResult extends ICellOutput {
-			/**
-			 * Mime bundle expected to contain mime type -> contents mappings.
-			 * This is dynamic and is controlled by kernels, so cannot be more specific
-			 */
-			data: {};
-			/**
-			 * Optional metadata, also a mime bundle
-			 */
-			metadata?: {};
-		}
-		export interface IExecuteResult extends IDisplayResult {
-			/**
-			 * Number of times the cell was executed
-			 */
-			executionCount: number;
-		}
-		export interface IErrorResult extends ICellOutput {
-			/**
-			 * Exception name
-			 */
-			ename: string;
-			/**
-			 * Exception value
-			 */
-			evalue: string;
-			/**
-			 * Stacktrace equivalent
-			 */
-			traceback?: string[];
-		}
-
-		export type OutputType =
-			| 'execute_result'
-			| 'display_data'
-			| 'stream'
-			| 'error'
-			| 'update_display_data';
-
-		//#endregion
-
-		//#region Session APIs
-		export interface SessionManager {
-			/**
-			 * Indicates whether the manager is ready.
-			 */
-			readonly isReady: boolean;
-
-			/**
-			 * A Thenable that is fulfilled when the manager is ready.
-			 */
-			readonly ready: Thenable<void>;
-
-			readonly specs: IAllKernels | undefined;
-
-			startNew(options: ISessionOptions): Thenable<ISession>;
-
-			shutdown(id: string): Thenable<void>;
-		}
-
-		export interface ISession {
-			/**
-			 * Is change of kernels supported for this session?
-			 */
-			canChangeKernels: boolean;
-			/*
-			 * Unique id of the session.
-			 */
-			readonly id: string;
-
-			/**
-			 * The current path associated with the session.
-			 */
-			readonly path: string;
-
-			/**
-			 * The current name associated with the session.
-			 */
-			readonly name: string;
-
-			/**
-			 * The type of the session.
-			 */
-			readonly type: string;
-
-			/**
-			 * The status indicates if the kernel is healthy, dead, starting, etc.
-			 */
-			readonly status: KernelStatus;
-
-			/**
-			 * The kernel.
-			 *
-			 * #### Notes
-			 * This is a read-only property, and can be altered by [changeKernel].
-			 */
-			readonly kernel: IKernel;
-
-			/**
-			 * Tracks whether the default kernel failed to load
-			 * This could be for a reason such as the kernel name not being recognized as a valid kernel;
-			 */
-			defaultKernelLoaded?: boolean;
-
-			changeKernel(kernelInfo: IKernelSpec): Thenable<IKernel>;
-		}
-
-		export interface ISessionOptions {
-			/**
-			 * The path (not including name) to the session.
-			 */
-			path: string;
-			/**
-			 * The name of the session.
-			 */
-			name?: string;
-			/**
-			 * The type of the session.
-			 */
-			type?: string;
-			/**
-			 * The type of kernel (e.g. python3).
-			 */
-			kernelName?: string;
-			/**
-			 * The id of an existing kernel.
-			 */
-			kernelId?: string;
-		}
-
-		export interface IKernel {
-			readonly id: string;
-			readonly name: string;
-			readonly supportsIntellisense: boolean;
-			/**
-			 * Test whether the kernel is ready.
-			 */
-			readonly isReady: boolean;
-
-			/**
-			 * A Thenable that is fulfilled when the kernel is ready.
-			 */
-			readonly ready: Thenable<void>;
-
-			/**
-			 * The cached kernel info.
-			 *
-			 * #### Notes
-			 * This value will be null until the kernel is ready.
-			 */
-			readonly info: IInfoReply | null;
-
-			/**
-			 * Gets the full specification for this kernel, which can be serialized to
-			 * a noteobok file
-			 */
-			getSpec(): Thenable<IKernelSpec>;
-
-			/**
-			 * Send an `execute_request` message.
-			 *
-			 * @param content - The content of the request.
-			 *
-			 * @param disposeOnDone - Whether to dispose of the future when done.
-			 *
-			 * @returns A kernel future.
-			 *
-			 * #### Notes
-			 * See [Messaging in
-			 * Jupyter](https://jupyter-client.readthedocs.io/en/latest/messaging.html#execute).
-			 *
-			 * This method returns a kernel future, rather than a Thenable, since execution may
-			 * have many response messages (for example, many iopub display messages).
-			 *
-			 * Future `onReply` is called with the `execute_reply` content when the
-			 * shell reply is received and validated.
-			 *
-			 * **See also:** [[IExecuteReply]]
-			 */
-			requestExecute(content: IExecuteRequest, disposeOnDone?: boolean): IFuture;
-
-
-			/**
-			 * Send a `complete_request` message.
-			 *
-			 * @param content - The content of the request.
-			 *
-			 * @returns A Thenable that resolves with the response message.
-			 *
-			 * #### Notes
-			 * See [Messaging in Jupyter](https://jupyter-client.readthedocs.io/en/latest/messaging.html#completion).
-			 *
-			 * Fulfills with the `complete_reply` content when the shell reply is
-			 * received and validated.
-			 */
-			requestComplete(content: ICompleteRequest): Thenable<ICompleteReplyMsg>;
-
-			/**
-			 * Interrupt a kernel.
-			 *
-			 * #### Notes
-			 * Uses the [Jupyter Notebook API](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter/notebook/master/notebook/services/api/api.yaml#!/kernels).
-			 *
-			 * The promise is fulfilled on a valid response and rejected otherwise.
-			 *
-			 * It is assumed that the API call does not mutate the kernel id or name.
-			 *
-			 * The promise will be rejected if the kernel status is `Dead` or if the
-			 * request fails or the response is invalid.
-			 */
-			interrupt(): Thenable<void>;
-		}
-
-		export interface IInfoReply {
-			protocol_version: string;
-			implementation: string;
-			implementation_version: string;
-			language_info: ILanguageInfo;
-			banner: string;
-			help_links: {
-				text: string;
-				url: string;
-			}[];
-		}
-
-		/**
-		 * The contents of a requestExecute message sent to the server.
-		 */
-		export interface IExecuteRequest extends IExecuteOptions {
-			code: string;
-		}
-
-		/**
-		 * The options used to configure an execute request.
-		 */
-		export interface IExecuteOptions {
-			/**
-			 * Whether to execute the code as quietly as possible.
-			 * The default is `false`.
-			 */
-			silent?: boolean;
-
-			/**
-			 * Whether to store history of the execution.
-			 * The default `true` if silent is False.
-			 * It is forced to  `false ` if silent is `true`.
-			 */
-			store_history?: boolean;
-
-			/**
-			 * A mapping of names to expressions to be evaluated in the
-			 * kernel's interactive namespace.
-			 */
-			user_expressions?: {};
-
-			/**
-			 * Whether to allow stdin requests.
-			 * The default is `true`.
-			 */
-			allow_stdin?: boolean;
-
-			/**
-			 * Whether to the abort execution queue on an error.
-			 * The default is `false`.
-			 */
-			stop_on_error?: boolean;
-		}
-
-		/**
-		 * The content of a `'complete_request'` message.
-		 *
-		 * See [Messaging in Jupyter](https://jupyter-client.readthedocs.io/en/latest/messaging.html#completion).
-		 *
-		 * **See also:** [[ICompleteReply]], [[IKernel.complete]]
-		 */
-		export interface ICompleteRequest {
-			code: string;
-			cursor_pos: number;
-		}
-
-		export interface ICompletionContent {
-			matches: string[];
-			cursor_start: number;
-			cursor_end: number;
-			metadata: any;
-			status: 'ok' | 'error';
-		}
-		/**
-		 * A `'complete_reply'` message on the `'stream'` channel.
-		 *
-		 * See [Messaging in Jupyter](https://jupyter-client.readthedocs.io/en/latest/messaging.html#completion).
-		 *
-		 * **See also:** [[ICompleteRequest]], [[IKernel.complete]]
-		 */
-		export interface ICompleteReplyMsg extends IShellMessage {
-			content: ICompletionContent;
-		}
-
-		/**
-		 * The valid Kernel status states.
-		 */
-		export type KernelStatus =
-			| 'unknown'
-			| 'starting'
-			| 'reconnecting'
-			| 'idle'
-			| 'busy'
-			| 'restarting'
-			| 'dead'
-			| 'connected';
-
-		/**
-		 * An arguments object for the kernel changed event.
-		 */
-		export interface IKernelChangedArgs {
-			oldValue: IKernel | null;
-			newValue: IKernel | null;
-		}
-
-		/// -------- JSON objects, and objects primarily intended not to have methods -----------
-		export interface IAllKernels {
-			defaultKernel: string;
-			kernels: IKernelSpec[];
-		}
-		export interface IKernelSpec {
-			name: string;
-			language?: string;
-			display_name?: string;
-		}
-
-		export interface MessageHandler<T extends IMessage> {
-			handle(message: T): void | Thenable<void>;
-		}
-
-
-		/**
-		 * A Future interface for responses from the kernel.
-		 *
-		 * When a message is sent to a kernel, a Future is created to handle any
-		 * responses that may come from the kernel.
-		 */
-		export interface IFuture extends vscode.Disposable {
-
-			/**
-			 * The original outgoing message.
-			 */
-			readonly msg: IMessage;
-
-			/**
-			 * A Thenable that resolves when the future is done.
-			 *
-			 * #### Notes
-			 * The future is done when there are no more responses expected from the
-			 * kernel.
-			 *
-			 * The `done` Thenable resolves to the reply message if there is one,
-			 * otherwise it resolves to `undefined`.
-			 */
-			readonly done: Thenable<IShellMessage | undefined>;
-
-			/**
-			 * Set the reply handler for the kernel future.
-			 *
-			 * #### Notes
-			 * If the handler returns a Thenable, all kernel message processing pauses
-			 * until the Thenable is resolved. If there is a reply message, the future
-			 * `done` Thenable also resolves to the reply message after this handler has
-			 * been called.
-			 */
-			setReplyHandler(handler: MessageHandler<IShellMessage>): void;
-
-			/**
-			 * Sets the stdin handler for the kernel future.
-			 *
-			 * #### Notes
-			 * If the handler returns a Thenable, all kernel message processing pauses
-			 * until the Thenable is resolved.
-			 */
-			setStdInHandler(handler: MessageHandler<IStdinMessage>): void;
-
-			/**
-			 * Sets the iopub handler for the kernel future.
-			 *
-			 * #### Notes
-			 * If the handler returns a Thenable, all kernel message processing pauses
-			 * until the Thenable is resolved.
-			 */
-			setIOPubHandler(handler: MessageHandler<IIOPubMessage>): void;
-
-			/**
-			 * Register hook for IOPub messages.
-			 *
-			 * @param hook - The callback invoked for an IOPub message.
-			 *
-			 * #### Notes
-			 * The IOPub hook system allows you to preempt the handlers for IOPub
-			 * messages handled by the future.
-			 *
-			 * The most recently registered hook is run first. A hook can return a
-			 * boolean or a Thenable to a boolean, in which case all kernel message
-			 * processing pauses until the Thenable is fulfilled. If a hook return value
-			 * resolves to false, any later hooks will not run and the function will
-			 * return a Thenable resolving to false. If a hook throws an error, the error
-			 * is logged to the console and the next hook is run. If a hook is
-			 * registered during the hook processing, it will not run until the next
-			 * message. If a hook is removed during the hook processing, it will be
-			 * deactivated immediately.
-			 */
-			registerMessageHook(
-				hook: (msg: IIOPubMessage) => boolean | Thenable<boolean>
-			): void;
-
-			/**
-			 * Remove a hook for IOPub messages.
-			 *
-			 * @param hook - The hook to remove.
-			 *
-			 * #### Notes
-			 * If a hook is removed during the hook processing, it will be deactivated immediately.
-			 */
-			removeMessageHook(
-				hook: (msg: IIOPubMessage) => boolean | Thenable<boolean>
-			): void;
-
-			/**
-			 * Send an `input_reply` message.
-			 */
-			sendInputReply(content: IInputReply): void;
-		}
-
-		/**
-		 * The valid channel names.
-		 */
-		export type Channel = 'shell' | 'iopub' | 'stdin';
-
-		/**
-		 * Kernel message header content.
-		 *
-		 * See [Messaging in Jupyter](https://jupyter-client.readthedocs.io/en/latest/messaging.html#general-message-format).
-		 *
-		 * **See also:** [[IMessage]]
-		 */
-		export interface IHeader {
-			username: string;
-			version: string;
-			session: string;
-			msg_id: string;
-			msg_type: string;
-		}
-
-		/**
-		 * A kernel message
-		 */
-		export interface IMessage {
-			type: Channel;
-			header: IHeader;
-			parent_header: IHeader | {};
-			metadata: {};
-			content: any;
-		}
-
-		/**
-		 * A kernel message on the `'shell'` channel.
-		 */
-		export interface IShellMessage extends IMessage {
-			channel: 'shell';
-		}
-
-		/**
-		 * A kernel message on the `'iopub'` channel.
-		 */
-		export interface IIOPubMessage extends IMessage {
-			channel: 'iopub';
-		}
-
-		/**
-		 * A kernel message on the `'stdin'` channel.
-		 */
-		export interface IStdinMessage extends IMessage {
-			channel: 'stdin';
-		}
-
-		/**
-		 * The content of an `'input_reply'` message.
-		 */
-		export interface IInputReply {
-			value: string;
-		}
-
-		//#endregion
-
-	}
-
 }

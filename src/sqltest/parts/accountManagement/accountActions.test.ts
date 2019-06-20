@@ -3,17 +3,15 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
-import { AddAccountAction, RemoveAccountAction } from 'sql/parts/accountManagement/common/accountActions';
+import { AddAccountAction, RemoveAccountAction } from 'sql/platform/accounts/common/accountActions';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 // import { MessageServiceStub } from 'sqltest/stubs/messageServiceStub';
 import { ErrorMessageServiceStub } from 'sqltest/stubs/errorMessageServiceStub';
 
-let testAccount = <sqlops.Account>{
+let testAccount = <azdata.Account>{
 	key: {
 		providerId: 'azure',
 		accountId: 'testAccount'

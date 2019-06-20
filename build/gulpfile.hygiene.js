@@ -42,12 +42,15 @@ const indentationFilter = [
 
 	// except specific files
 	'!ThirdPartyNotices.txt',
-	'!LICENSE.txt',
+	'!LICENSE.{txt,rtf}',
+	'!LICENSES.chromium.html',
+	'!**/LICENSE',
 	'!src/vs/nls.js',
+	'!src/vs/nls.build.js',
 	'!src/vs/css.js',
+	'!src/vs/css.build.js',
 	'!src/vs/loader.js',
 	'!src/vs/base/common/marked/marked.js',
-	'!src/vs/base/common/winjs.base.js',
 	'!src/vs/base/node/terminateProcess.sh',
 	'!src/vs/base/node/cpuUsage.sh',
 	'!test/assert.js',
@@ -78,13 +81,22 @@ const indentationFilter = [
 	'!src/vs/*/**/*.d.ts',
 	'!src/typings/**/*.d.ts',
 	'!extensions/**/*.d.ts',
-	'!**/*.{svg,exe,png,bmp,scpt,bat,cmd,cur,ttf,woff,eot,md,ps1,template,yaml,yml,d.ts.recipe}',
-	'!build/{lib,tslintRules}/**/*.js',
+	'!**/*.{svg,exe,png,bmp,scpt,bat,cmd,cur,ttf,woff,eot,md,ps1,template,yaml,yml,d.ts.recipe,ico,icns}',
+	'!build/{lib,tslintRules,download}/**/*.js',
 	'!build/**/*.sh',
-	'!build/tfs/**/*.js',
-	'!build/tfs/**/*.config',
+	'!build/azure-pipelines/**/*.js',
+	'!build/azure-pipelines/**/*.config',
 	'!**/Dockerfile',
-	'!extensions/markdown-language-features/media/*.js'
+	'!**/Dockerfile.*',
+	'!**/*.Dockerfile',
+	'!**/*.dockerfile',
+	'!extensions/markdown-language-features/media/*.js',
+	// {{SQL CARBON EDIT}}
+	'!**/*.{xlf,docx,sql,vsix,bacpac}',
+	'!extensions/mssql/sqltoolsservice/**',
+	'!extensions/import/flatfileimportservice/**',
+	'!extensions/admin-tool-ext-win/ssmsmin/**',
+	'!extensions/resource-deployment/notebooks/**'
 ];
 
 const copyrightFilter = [
@@ -96,6 +108,8 @@ const copyrightFilter = [
 	'!**/*.md',
 	'!**/*.bat',
 	'!**/*.cmd',
+	'!**/*.ico',
+	'!**/*.icns',
 	'!**/*.xml',
 	'!**/*.sh',
 	'!**/*.txt',
@@ -103,13 +117,47 @@ const copyrightFilter = [
 	'!**/*.opts',
 	'!**/*.disabled',
 	'!**/*.code-workspace',
+	'!**/promise-polyfill/polyfill.js',
 	'!build/**/*.init',
 	'!resources/linux/snap/snapcraft.yaml',
 	'!resources/linux/snap/electron-launch',
 	'!resources/win32/bin/code.js',
+	'!resources/completions/**',
 	'!extensions/markdown-language-features/media/highlight.css',
 	'!extensions/html-language-features/server/src/modes/typescript/*',
-	'!extensions/*/server/bin/*'
+	'!extensions/*/server/bin/*',
+	// {{SQL CARBON EDIT}}
+	'!extensions/notebook/src/intellisense/text.ts',
+	'!extensions/mssql/src/objectExplorerNodeProvider/webhdfs.ts',
+	'!src/sql/workbench/parts/notebook/outputs/tableRenderers.ts',
+	'!src/sql/workbench/parts/notebook/outputs/common/url.ts',
+	'!src/sql/workbench/parts/notebook/outputs/common/renderMimeInterfaces.ts',
+	'!src/sql/workbench/parts/notebook/outputs/common/outputProcessor.ts',
+	'!src/sql/workbench/parts/notebook/outputs/common/mimemodel.ts',
+	'!src/sql/workbench/parts/notebook/cellViews/media/*.css',
+	'!src/sql/base/browser/ui/table/plugins/rowSelectionModel.plugin.ts',
+	'!src/sql/base/browser/ui/table/plugins/rowDetailView.ts',
+	'!src/sql/base/browser/ui/table/plugins/headerFilter.plugin.ts',
+	'!src/sql/base/browser/ui/table/plugins/checkboxSelectColumn.plugin.ts',
+	'!src/sql/base/browser/ui/table/plugins/cellSelectionModel.plugin.ts',
+	'!src/sql/base/browser/ui/table/plugins/autoSizeColumns.plugin.ts',
+	'!src/sql/workbench/parts/notebook/outputs/sanitizer.ts',
+	'!src/sql/workbench/parts/notebook/outputs/renderers.ts',
+	'!src/sql/workbench/parts/notebook/outputs/registry.ts',
+	'!src/sql/workbench/parts/notebook/outputs/factories.ts',
+	'!src/sql/workbench/parts/notebook/models/nbformat.ts',
+	'!extensions/markdown-language-features/media/tomorrow.css',
+	'!src/sql/workbench/electron-browser/modelComponents/media/highlight.css',
+	'!src/sql/parts/modelComponents/highlight.css',
+	'!extensions/mssql/sqltoolsservice/**',
+	'!extensions/import/flatfileimportservice/**',
+	'!extensions/notebook/src/prompts/**',
+	'!extensions/mssql/src/prompts/**',
+	'!extensions/notebook/resources/jupyter_config/**',
+	'!**/*.gif',
+	'!**/*.xlf',
+	'!**/*.dacpac',
+	'!**/*.bacpac'
 ];
 
 const eslintFilter = [
@@ -120,7 +168,6 @@ const eslintFilter = [
 	'!src/vs/nls.js',
 	'!src/vs/css.build.js',
 	'!src/vs/nls.build.js',
-	'!src/**/winjs.base.js',
 	'!src/**/marked.js',
 	'!**/test/**'
 ];
@@ -140,6 +187,11 @@ const tslintFilter = [
 ];
 
 // {{SQL CARBON EDIT}}
+const useStrictFilter = [
+	'src/**'
+];
+
+// {{SQL CARBON EDIT}}
 const copyrightHeaderLines = [
 	'/*---------------------------------------------------------------------------------------------',
 	' *  Copyright (c) Microsoft Corporation. All rights reserved.',
@@ -156,8 +208,7 @@ gulp.task('eslint', () => {
 });
 
 gulp.task('tslint', () => {
-  // {{SQL CARBON EDIT}}
-	const options = { emitError: false };
+	const options = { emitError: true };
 
 	return vfs.src(all, { base: '.', follow: true, allowEmpty: true })
 		.pipe(filter(tslintFilter))
@@ -190,8 +241,8 @@ function hygiene(some) {
 	});
 
 	const copyrights = es.through(function (file) {
-		const lines = file.__lines;
 
+		const lines = file.__lines;
 		for (let i = 0; i < copyrightHeaderLines.length; i++) {
 			if (lines[i] !== copyrightHeaderLines[i]) {
 				console.error(file.relative + ': Missing or bad copyright statement');
@@ -202,6 +253,23 @@ function hygiene(some) {
 
 		this.emit('data', file);
 	});
+
+	// {{SQL CARBON EDIT}}
+	// Check for unnecessary 'use strict' lines. These are automatically added by the alwaysStrict compiler option so don't need to be added manually
+	const useStrict = es.through(function (file) {
+		const lines = file.__lines;
+		// Only take the first 10 lines to reduce false positives- the compiler will throw an error if it's not the first non-comment line in a file
+		// (10 is used to account for copyright and extraneous newlines)
+		lines.slice(0, 10).forEach((line, i) => {
+			if (/\s*'use\s*strict\s*'/.test(line)) {
+				console.error(file.relative + '(' + (i + 1) + ',1): Unnecessary \'use strict\' - this is already added by the compiler');
+				errorCount++;
+			}
+		});
+
+		this.emit('data', file);
+	});
+	// {{SQL CARBON EDIT}} END
 
 	const formatting = es.map(function (file, cb) {
 		tsfmt.processString(file.path, file.contents.toString('utf8'), {
@@ -223,7 +291,7 @@ function hygiene(some) {
 			let formatted = result.dest.replace(/\r\n/gm, '\n');
 
 			if (original !== formatted) {
-				console.error('File not formatted:', file.relative);
+				console.error("File not formatted. Run the 'Format Document' command to fix it:", file.relative);
 				errorCount++;
 			}
 			cb(null, file);
@@ -255,27 +323,52 @@ function hygiene(some) {
 		.pipe(filter(f => !f.stat.isDirectory()))
 		.pipe(filter(indentationFilter))
 		.pipe(indentation)
-		.pipe(filter(copyrightFilter));
-    // {{SQL CARBON EDIT}}
-		// .pipe(copyrights);
+		.pipe(filter(copyrightFilter))
+		.pipe(copyrights);
 
 	const typescript = result
 		.pipe(filter(tslintFilter))
 		.pipe(formatting)
-		.pipe(tsl);
+		.pipe(tsl)
+		// {{SQL CARBON EDIT}}
+		.pipe(filter(useStrictFilter))
+		.pipe(useStrict);
 
 	const javascript = result
 		.pipe(filter(eslintFilter))
 		.pipe(gulpeslint('src/.eslintrc'))
-		.pipe(gulpeslint.formatEach('compact'));
-    // {{SQL CARBON EDIT}}
-		// .pipe(gulpeslint.failAfterError());
+		.pipe(gulpeslint.formatEach('compact'))
+		.pipe(gulpeslint.failAfterError());
 
 	let count = 0;
 	return es.merge(typescript, javascript)
 		.pipe(es.through(function (data) {
-       // {{SQL CARBON EDIT}}
-       this.emit('end');
+			count++;
+			if (process.env['TRAVIS'] && count % 10 === 0) {
+				process.stdout.write('.');
+			}
+			this.emit('data', data);
+		}, function () {
+			process.stdout.write('\n');
+
+			const tslintResult = tsLinter.getResult();
+			if (tslintResult.failures.length > 0) {
+				for (const failure of tslintResult.failures) {
+					const name = failure.getFileName();
+					const position = failure.getStartPosition();
+					const line = position.getLineAndCharacter().line;
+					const character = position.getLineAndCharacter().character;
+
+					console.error(`${name}:${line + 1}:${character + 1}:${failure.getFailure()}`);
+				}
+				errorCount += tslintResult.failures.length;
+			}
+
+			if (errorCount > 0) {
+				this.emit('error', 'Hygiene failed with ' + errorCount + ' errors. Check \'build/gulpfile.hygiene.js\'.');
+			} else {
+				this.emit('end');
+			}
 		}));
 }
 
@@ -293,7 +386,7 @@ function createGitIndexVinyls(paths) {
 				return e(err);
 			}
 
-			cp.exec(`git show :${relativePath}`, { maxBuffer: 2000 * 1024, encoding: 'buffer' }, (err, out) => {
+			cp.exec(`git show ":${relativePath}"`, { maxBuffer: 2000 * 1024, encoding: 'buffer' }, (err, out) => {
 				if (err) {
 					return e(err);
 				}

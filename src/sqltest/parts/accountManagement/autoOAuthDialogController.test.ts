@@ -3,13 +3,12 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
 import * as TypeMoq from 'typemoq';
 import { Emitter } from 'vs/base/common/event';
 import { InstantiationService } from 'vs/platform/instantiation/common/instantiationService';
 
-import { AutoOAuthDialog } from 'sql/parts/accountManagement/autoOAuthDialog/autoOAuthDialog';
-import { AutoOAuthDialogController } from 'sql/parts/accountManagement/autoOAuthDialog/autoOAuthDialogController';
+import { AutoOAuthDialog } from 'sql/platform/accounts/browser/autoOAuthDialog';
+import { AutoOAuthDialogController } from 'sql/platform/accounts/browser/autoOAuthDialogController';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 import { ErrorMessageServiceStub } from 'sqltest/stubs/errorMessageServiceStub';
 import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
@@ -38,7 +37,7 @@ suite('auto OAuth dialog controller tests', () => {
 		mockOnCloseEvent = new Emitter<void>();
 
 		// Create a mock auto OAuth dialog
-		let autoOAuthDialog = new AutoOAuthDialog(null, null, null, null, new ContextKeyServiceStub(), null);
+		let autoOAuthDialog = new AutoOAuthDialog(null, null, null, null, new ContextKeyServiceStub(), null, undefined);
 		mockAutoOAuthDialog = TypeMoq.Mock.ofInstance(autoOAuthDialog);
 
 		mockAutoOAuthDialog.setup(x => x.onCancel).returns(() => mockOnCancelEvent.event);
@@ -82,7 +81,7 @@ suite('auto OAuth dialog controller tests', () => {
 
 		// If: a oauth flyout is already open
 		autoOAuthDialogController.openAutoOAuthDialog(providerId, title, message, userCode, uri)
-		.then(success => done('Failure: Expected error on 2nd dialog open'), error => done());
+			.then(success => done('Failure: Expected error on 2nd dialog open'), error => done());
 
 		// Then: An error dialog should have been opened
 		mockErrorMessageService.verify(x => x.showDialog(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());

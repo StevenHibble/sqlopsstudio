@@ -3,15 +3,14 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as assert from 'assert';
 import * as TypeMoq from 'typemoq';
 import { EventVerifierSingle } from 'sqltest/utils/eventVerifier';
 import { Emitter } from 'vs/base/common/event';
-import { AccountPicker } from 'sql/parts/accountManagement/accountPicker/accountPicker';
-import { AccountPickerService } from 'sql/parts/accountManagement/accountPicker/accountPickerService';
-import { AccountPickerViewModel } from 'sql/parts/accountManagement/accountPicker/accountPickerViewModel';
+import { AccountPicker } from 'sql/platform/accounts/browser/accountPicker';
+import { AccountPickerService } from 'sql/platform/accounts/browser/accountPickerService';
+import { AccountPickerViewModel } from 'sql/platform/accounts/common/accountPickerViewModel';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 import { InstantiationService } from 'vs/platform/instantiation/common/instantiationService';
 
@@ -19,7 +18,7 @@ import { InstantiationService } from 'vs/platform/instantiation/common/instantia
 let mockAddAccountCompleteEmitter: Emitter<void>;
 let mockAddAccountErrorEmitter: Emitter<string>;
 let mockAddAccountStartEmitter: Emitter<void>;
-let mockOnAccountSelectionChangeEvent: Emitter<sqlops.Account>;
+let mockOnAccountSelectionChangeEvent: Emitter<azdata.Account>;
 
 // TESTS ///////////////////////////////////////////////////////////////////
 suite('Account picker service tests', () => {
@@ -28,7 +27,7 @@ suite('Account picker service tests', () => {
 		mockAddAccountCompleteEmitter = new Emitter<void>();
 		mockAddAccountErrorEmitter = new Emitter<string>();
 		mockAddAccountStartEmitter = new Emitter<void>();
-		mockOnAccountSelectionChangeEvent = new Emitter<sqlops.Account>();
+		mockOnAccountSelectionChangeEvent = new Emitter<azdata.Account>();
 	});
 
 	test('Construction - Events are properly defined', () => {
@@ -71,12 +70,13 @@ suite('Account picker service tests', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Account 1'
+				displayName: 'Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
 		};
-		let evOnAccountSelectionChangeEvent = new EventVerifierSingle<sqlops.Account>();
+		let evOnAccountSelectionChangeEvent = new EventVerifierSingle<azdata.Account>();
 		service.onAccountSelectionChangeEvent(evOnAccountSelectionChangeEvent.eventHandler);
 		mockOnAccountSelectionChangeEvent.fire(account);
 		evOnAccountSelectionChangeEvent.assertFired(account);

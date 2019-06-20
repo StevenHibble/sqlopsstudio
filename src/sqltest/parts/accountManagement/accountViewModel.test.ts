@@ -3,24 +3,22 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
 import { EventVerifierSingle } from 'sqltest/utils/eventVerifier';
 import { Emitter } from 'vs/base/common/event';
-import { AccountViewModel } from 'sql/parts/accountManagement/accountDialog/accountViewModel';
-import { AccountProviderAddedEventParams, UpdateAccountListEventParams } from 'sql/services/accountManagement/eventTypes';
+import { AccountViewModel } from 'sql/platform/accounts/common/accountViewModel';
+import { AccountProviderAddedEventParams, UpdateAccountListEventParams } from 'sql/platform/accounts/common/eventTypes';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 
 // SUITE STATE /////////////////////////////////////////////////////////////
 let mockAddProviderEmitter: Emitter<AccountProviderAddedEventParams>;
-let mockRemoveProviderEmitter: Emitter<sqlops.AccountProviderMetadata>;
+let mockRemoveProviderEmitter: Emitter<azdata.AccountProviderMetadata>;
 let mockUpdateAccountEmitter: Emitter<UpdateAccountListEventParams>;
 
-let providers: sqlops.AccountProviderMetadata[];
-let accounts: sqlops.Account[];
+let providers: azdata.AccountProviderMetadata[];
+let accounts: azdata.Account[];
 
 suite('Account Management Dialog ViewModel Tests', () => {
 
@@ -36,7 +34,8 @@ suite('Account Management Dialog ViewModel Tests', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Account 1'
+				displayName: 'Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -47,7 +46,8 @@ suite('Account Management Dialog ViewModel Tests', () => {
 			displayInfo: {
 				contextualDisplayName: 'Work/School Account',
 				accountType: 'work_school',
-				displayName: 'Account 2'
+				displayName: 'Account 2',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: true
@@ -56,7 +56,7 @@ suite('Account Management Dialog ViewModel Tests', () => {
 
 		// Setup event mocks for the account management service
 		mockAddProviderEmitter = new Emitter<AccountProviderAddedEventParams>();
-		mockRemoveProviderEmitter = new Emitter<sqlops.AccountProviderMetadata>();
+		mockRemoveProviderEmitter = new Emitter<azdata.AccountProviderMetadata>();
 		mockUpdateAccountEmitter = new Emitter<UpdateAccountListEventParams>();
 	});
 
@@ -79,7 +79,7 @@ suite('Account Management Dialog ViewModel Tests', () => {
 		evAddProvider.assertFired(argAddProvider);
 
 		let argRemoveProvider = providers[0];
-		let evRemoveProvider = new EventVerifierSingle<sqlops.AccountProviderMetadata>();
+		let evRemoveProvider = new EventVerifierSingle<azdata.AccountProviderMetadata>();
 		vm.removeProviderEvent(evRemoveProvider.eventHandler);
 		mockRemoveProviderEmitter.fire(argRemoveProvider);
 		evRemoveProvider.assertFired(argRemoveProvider);
@@ -95,7 +95,7 @@ suite('Account Management Dialog ViewModel Tests', () => {
 		// Setup: Create a viewmodel with event handlers
 		let mockAccountManagementService = getMockAccountManagementService(true, true);
 		let evAddProvider = new EventVerifierSingle<AccountProviderAddedEventParams>();
-		let evRemoveProvider = new EventVerifierSingle<sqlops.AccountProviderMetadata>();
+		let evRemoveProvider = new EventVerifierSingle<azdata.AccountProviderMetadata>();
 		let evUpdateAccounts = new EventVerifierSingle<UpdateAccountListEventParams>();
 		let vm = getViewModel(mockAccountManagementService.object, evAddProvider, evRemoveProvider, evUpdateAccounts);
 
@@ -116,8 +116,8 @@ suite('Account Management Dialog ViewModel Tests', () => {
 				assert.equal(results[0].addedProvider, providers[0]);
 				assert.equal(results[0].initialAccounts, accounts);
 			}).then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -125,7 +125,7 @@ suite('Account Management Dialog ViewModel Tests', () => {
 		// Setup: Create a mock account management service that rejects looking up providers
 		let mockAccountManagementService = getMockAccountManagementService(false, true);
 		let evAddProvider = new EventVerifierSingle<AccountProviderAddedEventParams>();
-		let evRemoveProvider = new EventVerifierSingle<sqlops.AccountProviderMetadata>();
+		let evRemoveProvider = new EventVerifierSingle<azdata.AccountProviderMetadata>();
 		let evUpdateAccounts = new EventVerifierSingle<UpdateAccountListEventParams>();
 		let vm = getViewModel(mockAccountManagementService.object, evAddProvider, evRemoveProvider, evUpdateAccounts);
 
@@ -145,8 +145,8 @@ suite('Account Management Dialog ViewModel Tests', () => {
 				assert.equal(results.length, 0);
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -154,7 +154,7 @@ suite('Account Management Dialog ViewModel Tests', () => {
 		// Setup: Create a mock account management service that rejects the promise
 		let mockAccountManagementService = getMockAccountManagementService(true, false);
 		let evAddProvider = new EventVerifierSingle<AccountProviderAddedEventParams>();
-		let evRemoveProvider = new EventVerifierSingle<sqlops.AccountProviderMetadata>();
+		let evRemoveProvider = new EventVerifierSingle<azdata.AccountProviderMetadata>();
 		let evUpdateAccounts = new EventVerifierSingle<UpdateAccountListEventParams>();
 		let vm = getViewModel(mockAccountManagementService.object, evAddProvider, evRemoveProvider, evUpdateAccounts);
 
@@ -175,8 +175,8 @@ suite('Account Management Dialog ViewModel Tests', () => {
 				assert.equal(result[0].addedProvider, providers[0]);
 				assert.equal(result[0].initialAccounts, accounts);
 			}).then(
-			() => done(),
-			err => done()
+				() => done(),
+				err => done()
 			);
 	});
 });
@@ -202,7 +202,7 @@ function getMockAccountManagementService(resolveProviders: boolean, resolveAccou
 function getViewModel(
 	ams: AccountManagementTestService,
 	evAdd: EventVerifierSingle<AccountProviderAddedEventParams>,
-	evRemove: EventVerifierSingle<sqlops.AccountProviderMetadata>,
+	evRemove: EventVerifierSingle<azdata.AccountProviderMetadata>,
 	evUpdate: EventVerifierSingle<UpdateAccountListEventParams>
 ): AccountViewModel {
 	let vm = new AccountViewModel(ams);
@@ -215,7 +215,7 @@ function getViewModel(
 
 function assertNoEventsFired(
 	evAdd: EventVerifierSingle<AccountProviderAddedEventParams>,
-	evRemove: EventVerifierSingle<sqlops.AccountProviderMetadata>,
+	evRemove: EventVerifierSingle<azdata.AccountProviderMetadata>,
 	evUpdate: EventVerifierSingle<UpdateAccountListEventParams>
 ): void {
 	evAdd.assertNotFired();

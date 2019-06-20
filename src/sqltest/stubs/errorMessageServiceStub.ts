@@ -3,9 +3,8 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import { IErrorMessageService } from 'sql/parts/connection/common/connectionManagement';
 import Severity from 'vs/base/common/severity';
+import { IErrorMessageService } from 'sql/platform/errorMessage/common/errorMessageService';
 
 export class ErrorMessageServiceStub implements IErrorMessageService {
 	_serviceBrand: any;

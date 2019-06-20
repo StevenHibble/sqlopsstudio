@@ -7,14 +7,16 @@ import { Observable } from 'rxjs/Observable';
 // of is not on Observable by default, need to import it
 import 'rxjs/add/observable/of';
 
-import { WidgetConfig } from 'sql/parts/dashboard/common/dashboardWidget';
-import { DashboardServiceInterface } from 'sql/parts/dashboard/services/dashboardServiceInterface.service';
-import { SingleAdminService, SingleConnectionManagementService } from 'sql/services/common/commonServiceInterface.service';
-import { PropertiesWidgetComponent } from 'sql/parts/dashboard/widgets/properties/propertiesWidget.component';
-import { ConnectionManagementInfo } from 'sql/parts/connection/common/connectionManagementInfo';
+import { WidgetConfig } from 'sql/workbench/parts/dashboard/common/dashboardWidget';
+import { DashboardServiceInterface } from 'sql/workbench/parts/dashboard/services/dashboardServiceInterface.service';
+import { SingleAdminService, SingleConnectionManagementService } from 'sql/platform/bootstrap/node/commonServiceInterface.service';
+import { PropertiesWidgetComponent } from 'sql/workbench/parts/dashboard/widgets/properties/propertiesWidget.component';
+import { ConnectionManagementInfo } from 'sql/platform/connection/common/connectionManagementInfo';
 
 import * as TypeMoq from 'typemoq';
 import * as assert from 'assert';
+import { TestLogService } from 'vs/workbench/test/workbenchTestServices';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 class TestChangeDetectorRef extends ChangeDetectorRef {
 	reattach(): void {
@@ -35,7 +37,9 @@ class TestChangeDetectorRef extends ChangeDetectorRef {
 }
 
 suite('Dashboard Properties Widget Tests', () => {
-	test('Parses good config', (done) => {
+	test('Parses good config', function (done) {
+		// for some reason mocha thinks this test takes 26 seconds even though it doesn't, so it says this failed because it took longer than 2 seconds
+		this.timeout(30000);
 		let propertiesConfig = {
 			properties: [
 				{
@@ -58,6 +62,7 @@ suite('Dashboard Properties Widget Tests', () => {
 			serverEdition: undefined,
 			azureVersion: undefined,
 			osVersion: undefined,
+			options: {},
 		};
 
 		let databaseInfo = {
@@ -71,11 +76,14 @@ suite('Dashboard Properties Widget Tests', () => {
 				'properties-widget': propertiesConfig
 			},
 			context: 'server',
-			provider: 'MSSQL',
+			provider: mssqlProviderName,
 			edition: 0
 		};
 
-		let dashboardService = TypeMoq.Mock.ofType(DashboardServiceInterface, TypeMoq.MockBehavior.Loose, [{}]);
+		let dashboardService = TypeMoq.Mock.ofInstance<DashboardServiceInterface>({
+			adminService: undefined,
+			connectionManagementService: undefined
+		} as DashboardServiceInterface, TypeMoq.MockBehavior.Loose);
 
 		let singleAdminService = TypeMoq.Mock.ofType(SingleAdminService);
 		singleAdminService.setup(x => x.databaseInfo).returns(() => Observable.of(databaseInfo));
@@ -90,11 +98,13 @@ suite('Dashboard Properties Widget Tests', () => {
 
 		dashboardService.setup(x => x.connectionManagementService).returns(() => singleConnectionService.object);
 
-		let consoleError = (message?: any, ...optionalParams: any[]): void => {
-			assert.fail('Called console Error unexpectedly');
+		const testLogService = new class extends TestLogService {
+			error() {
+				assert.fail('Called console Error unexpectedly');
+			}
 		};
 
-		let testComponent = new PropertiesWidgetComponent(dashboardService.object, new TestChangeDetectorRef(), undefined, widgetConfig, consoleError);
+		let testComponent = new PropertiesWidgetComponent(dashboardService.object, new TestChangeDetectorRef(), undefined, widgetConfig, testLogService);
 
 		// because config parsing is done async we need to put our asserts on the thread stack
 		setTimeout(() => {
@@ -104,6 +114,5 @@ suite('Dashboard Properties Widget Tests', () => {
 			assert.equal((<any>testComponent).properties[0].value, 'Test Property');
 			done();
 		});
-		// for some reason mocha thinks this test takes 26 seconds even though it doesn't, so it says this failed because it took longer than 2 seconds
-	}).timeout(30000);
+	});
 });

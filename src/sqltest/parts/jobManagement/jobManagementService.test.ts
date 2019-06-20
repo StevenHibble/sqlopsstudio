@@ -3,11 +3,7 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import * as sqlops from 'sqlops';
-import * as assert from 'assert';
-import * as TypeMoq from 'typemoq';
-import { JobManagementService } from 'sql/parts/jobManagement/common/jobManagementService';
+import { JobManagementService } from 'sql/platform/jobManagement/common/jobManagementService';
 
 // TESTS ///////////////////////////////////////////////////////////////////
 suite('Job Management service tests', () => {

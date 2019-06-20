@@ -2,17 +2,17 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
+
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
 
 import * as types from 'vs/base/common/types';
-import { TPromise } from 'vs/base/common/winjs.base';
 import { ILocalizedString, MenuRegistry, ICommandAction } from 'vs/platform/actions/common/actions';
 import { Event, Emitter } from 'vs/base/common/event';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { IdGenerator } from 'vs/base/common/idGenerator';
 import { createCSSRule } from 'vs/base/browser/dom';
-import URI from 'vs/base/common/uri';
+import { URI } from 'vs/base/common/uri';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 
@@ -36,8 +36,8 @@ export abstract class Task {
 		this.id = opts.id;
 		this.title = opts.title;
 		this.iconPath = {
-			dark: URI.parse(opts.iconPath.dark),
-			light: URI.parse(opts.iconPath.light),
+			dark: opts.iconPath ? URI.parse(opts.iconPath.dark) : undefined,
+			light: opts.iconPath ? URI.parse(opts.iconPath.light) : undefined,
 		};
 		this._iconClass = opts.iconClass;
 		this._description = opts.description;
@@ -65,7 +65,7 @@ export abstract class Task {
 		return TaskRegistry.registerTask(this.toITask());
 	}
 
-	public abstract runTask(accessor: ServicesAccessor, profile: IConnectionProfile, args: any): void | TPromise<void>;
+	public abstract runTask(accessor: ServicesAccessor, profile: IConnectionProfile, args: any): void | Promise<void>;
 }
 
 export interface ITaskHandlerDescription {

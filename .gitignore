@@ -1,8 +1,10 @@
 .DS_Store
+.cache
 npm-debug.log
 Thumbs.db
 node_modules/
 .build/
+extensions/**/dist/
 out/
 out-build/
 out-editor/
@@ -13,7 +15,10 @@ out-editor-min/
 out-monaco-editor-core/
 out-vscode/
 out-vscode-min/
-build/node_modules
+out-vscode-reh/
+out-vscode-reh-min/
+out-vscode-reh-pkg/
+**/node_modules
 coverage/
 test_data/
 test-results/

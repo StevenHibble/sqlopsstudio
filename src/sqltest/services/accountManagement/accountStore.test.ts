@@ -3,11 +3,9 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
-import AccountStore from 'sql/services/accountManagement/accountStore';
+import * as azdata from 'azdata';
+import AccountStore from 'sql/platform/accounts/common/accountStore';
 import { EventVerifierSingle } from 'sqltest/utils/eventVerifier';
 
 suite('Account Store Tests', () => {
@@ -31,8 +29,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(memento[AccountStore.MEMENTO_KEY][0], account1);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -57,8 +55,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(memento[AccountStore.MEMENTO_KEY][0], account1);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -68,7 +66,7 @@ suite('Account Store Tests', () => {
 		let as = new AccountStore(memento);
 
 		// If: I add an account to the store that already exists
-		let param = <sqlops.Account>{
+		let param = <azdata.Account>{
 			key: account2.key,
 			displayInfo: account1.displayInfo,
 			isStale: account1.isStale
@@ -88,8 +86,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(memento[AccountStore.MEMENTO_KEY][1], param);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -110,8 +108,8 @@ suite('Account Store Tests', () => {
 				assert.equal(Object.keys(memento).length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -129,8 +127,8 @@ suite('Account Store Tests', () => {
 				assert.equal(result.length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -147,8 +145,8 @@ suite('Account Store Tests', () => {
 				assert.equal(result.length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -167,8 +165,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(result[1], memento[AccountStore.MEMENTO_KEY][1]);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -189,8 +187,8 @@ suite('Account Store Tests', () => {
 				assert.equal(Object.keys(memento).length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -208,8 +206,8 @@ suite('Account Store Tests', () => {
 				assert.equal(result.length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -228,8 +226,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(result[1], memento[AccountStore.MEMENTO_KEY][1]);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -250,8 +248,8 @@ suite('Account Store Tests', () => {
 				assert.equal(memento[AccountStore.MEMENTO_KEY].length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -273,8 +271,8 @@ suite('Account Store Tests', () => {
 				assert.equal(memento[AccountStore.MEMENTO_KEY].length, 0);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -296,8 +294,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(memento[AccountStore.MEMENTO_KEY][0], account2);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -308,7 +306,7 @@ suite('Account Store Tests', () => {
 		let as = new AccountStore(memento);
 
 		// ... Create a callback that we can verify was called
-		let updateCallback = new EventVerifierSingle<sqlops.Account>();
+		let updateCallback = new EventVerifierSingle<azdata.Account>();
 
 		// If: I update an account
 		as.update(account1.key, updateCallback.eventHandler)
@@ -325,8 +323,8 @@ suite('Account Store Tests', () => {
 				updateCallback.assertNotFired();
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -337,7 +335,7 @@ suite('Account Store Tests', () => {
 		let as = new AccountStore(memento);
 
 		// ... Create a callback that we can verify was called
-		let updateCallback = new EventVerifierSingle<sqlops.Account>();
+		let updateCallback = new EventVerifierSingle<azdata.Account>();
 
 		// If: I update an account that doesn't exist
 		as.update({ accountId: 'testyTest', providerId: 'cloudyCloud' }, updateCallback.eventHandler)
@@ -354,8 +352,8 @@ suite('Account Store Tests', () => {
 				updateCallback.assertNotFired();
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -366,7 +364,7 @@ suite('Account Store Tests', () => {
 
 		// ... Create a callback to update the account
 		let newDisplayName = 'Display Name Changed!';
-		let updateCallback = (arg: sqlops.Account) => {
+		let updateCallback = (arg: azdata.Account) => {
 			arg.displayInfo.displayName = newDisplayName;
 		};
 
@@ -388,8 +386,8 @@ suite('Account Store Tests', () => {
 				assertAccountEqual(memento[AccountStore.MEMENTO_KEY][1], account2);
 			})
 			.then(
-			() => done(),
-			e => done(e)
+				() => done(),
+				e => done(e)
 			);
 	});
 
@@ -397,7 +395,7 @@ suite('Account Store Tests', () => {
 });
 
 // TODO: Reinstate contextual logo once UI changes are checked in
-const account1 = <sqlops.Account>{
+const account1 = <azdata.Account>{
 	key: {
 		providerId: 'azure',
 		accountId: 'testAccount1'
@@ -410,7 +408,7 @@ const account1 = <sqlops.Account>{
 	isStale: false
 };
 
-const account2 = <sqlops.Account>{
+const account2 = <azdata.Account>{
 	key: {
 		providerId: 'azure',
 		accountId: 'testAccount2'
@@ -430,7 +428,7 @@ function getTestMemento() {
 	return memento;
 }
 
-function assertAccountEqual(a: sqlops.Account, b: sqlops.Account) {
+function assertAccountEqual(a: azdata.Account, b: azdata.Account) {
 	assert.equal(a.key.providerId, b.key.providerId);
 	assert.equal(a.key.accountId, b.key.accountId);
 

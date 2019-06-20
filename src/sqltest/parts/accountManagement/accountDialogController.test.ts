@@ -3,18 +3,16 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
 import * as TypeMoq from 'typemoq';
 import { Emitter } from 'vs/base/common/event';
-import { AccountDialog } from 'sql/parts/accountManagement/accountDialog/accountDialog';
-import { AccountDialogController } from 'sql/parts/accountManagement/accountDialog/accountDialogController';
-import { AccountViewModel } from 'sql/parts/accountManagement/accountDialog/accountViewModel';
+import { AccountDialog } from 'sql/platform/accounts/browser/accountDialog';
+import { AccountDialogController } from 'sql/platform/accounts/browser/accountDialogController';
+import { AccountViewModel } from 'sql/platform/accounts/common/accountViewModel';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 import { ErrorMessageServiceStub } from 'sqltest/stubs/errorMessageServiceStub';
 import { InstantiationService } from 'vs/platform/instantiation/common/instantiationService';
-import { AccountListRenderer } from 'sql/parts/accountManagement/common/accountListRenderer';
+import { AccountListRenderer } from 'sql/platform/accounts/browser/accountListRenderer';
 import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
 
 // TESTS ///////////////////////////////////////////////////////////////////
@@ -88,7 +86,7 @@ function createInstantiationService(addAccountFailureEmitter?: Emitter<string>):
 		.returns(() => undefined);
 
 	// Create a mock account dialog
-	let accountDialog = new AccountDialog(null, null, null, instantiationService.object, null, null, null, new ContextKeyServiceStub(), null);
+	let accountDialog = new AccountDialog(null, null, instantiationService.object, null, null, null, null, new ContextKeyServiceStub(), null, undefined);
 	let mockAccountDialog = TypeMoq.Mock.ofInstance(accountDialog);
 	mockAccountDialog.setup(x => x.onAddAccountErrorEvent)
 		.returns(() => { return addAccountFailureEmitter ? addAccountFailureEmitter.event : mockEvent.event; });

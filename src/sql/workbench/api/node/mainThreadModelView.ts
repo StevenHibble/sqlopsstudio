@@ -2,17 +2,16 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { MainThreadModelViewShape, SqlMainContext, ExtHostModelViewShape, SqlExtHostContext } from 'sql/workbench/api/node/sqlExtHost.protocol';
-import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
+import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
 import { Disposable } from 'vs/base/common/lifecycle';
 
 
-import { IModelViewService } from 'sql/services/modelComponents/modelViewService';
+import { IModelViewService } from 'sql/platform/modelComponents/common/modelViewService';
 import { IItemConfig, IComponentShape } from 'sql/workbench/api/common/sqlExtHostTypes';
-import { IModelView } from 'sql/services/model/modelViewService';
+import { IModelView } from 'sql/platform/model/common/modelViewService';
 
 
 @extHostNamedCustomer(SqlMainContext.MainThreadModelView)

@@ -4,13 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
-import { Mock, It, Times, MockBehavior } from 'typemoq';
-import { ComponentBase, ContainerBase, ItemDescriptor } from 'sql/parts/modelComponents/componentBase';
-import { IComponentDescriptor, IModelStore, ComponentEventType } from 'sql/parts/modelComponents/interfaces';
-import { ModelStore } from 'sql/parts/modelComponents/modelStore';
+import { ComponentBase, ContainerBase, ItemDescriptor } from 'sql/workbench/electron-browser/modelComponents/componentBase';
+import { IComponentDescriptor, IModelStore, ComponentEventType } from 'sql/workbench/electron-browser/modelComponents/interfaces';
+import { ModelStore } from 'sql/workbench/electron-browser/modelComponents/modelStore';
 import { ChangeDetectorRef } from '@angular/core';
 
-'use strict';
 
 class TestComponent extends ComponentBase {
 	public descriptor: IComponentDescriptor;

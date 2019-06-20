@@ -4,13 +4,15 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IConnectionManagementService, IConnectableInput, IConnectionCompletionOptions, IConnectionCallbacks, IConnectionResult, INewConnectionParams }
-	from 'sql/parts/connection/common/connectionManagement';
-import { IConnectionProfileGroup, ConnectionProfileGroup } from 'sql/parts/connection/common/connectionProfileGroup';
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
-import { ConnectionProfile } from 'sql/parts/connection/common/connectionProfile';
-import { ConnectionManagementInfo } from 'sql/parts/connection/common/connectionManagementInfo';
-import * as sqlops from 'sqlops';
+	from 'sql/platform/connection/common/connectionManagement';
+import { IConnectionProfileGroup, ConnectionProfileGroup } from 'sql/platform/connection/common/connectionProfileGroup';
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
+import { ConnectionManagementInfo } from 'sql/platform/connection/common/connectionManagementInfo';
+import * as azdata from 'azdata';
 import { Event, Emitter } from 'vs/base/common/event';
+import { isUndefinedOrNull } from 'vs/base/common/types';
+import { ConnectionProviderProperties } from 'sql/workbench/parts/connection/common/connectionProviderExtension';
 
 // Test stubs for commonly used objects
 
@@ -31,11 +33,15 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return conEvent.event;
 	}
 
-	registerProvider(providerId: string, provider: sqlops.ConnectionProvider): void {
+	registerProvider(providerId: string, provider: azdata.ConnectionProvider): void {
 
 	}
 
-	showConnectionDialog(params?: INewConnectionParams, model?: IConnectionProfile, connectionResult?: IConnectionResult): Promise<void> {
+	registerIconProvider(providerId: string, provider: azdata.IconProvider): void {
+
+	}
+
+	showConnectionDialog(params?: INewConnectionParams, options?: IConnectionCompletionOptions, model?: IConnectionProfile, connectionResult?: IConnectionResult): Promise<void> {
 		return undefined;
 	}
 
@@ -47,7 +53,7 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return undefined;
 	}
 
-	onConnectionComplete(handle: number, connectionInfoSummary: sqlops.ConnectionInfoSummary): void {
+	onConnectionComplete(handle: number, connectionInfoSummary: azdata.ConnectionInfoSummary): void {
 
 	}
 
@@ -55,11 +61,11 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 
 	}
 
-	public onConnectionChangedNotification(handle: number, changedConnInfo: sqlops.ChangedConnectionInfo): void {
+	public onConnectionChangedNotification(handle: number, changedConnInfo: azdata.ChangedConnectionInfo): void {
 
 	}
 
-	getCurrentConnectionSummary(): sqlops.ConnectionSummary {
+	getCurrentConnectionSummary(): azdata.ConnectionSummary {
 		return undefined;
 	}
 
@@ -111,7 +117,7 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		});
 	}
 
-	getAdvancedProperties(): sqlops.ConnectionOption[] {
+	getAdvancedProperties(): azdata.ConnectionOption[] {
 		return [];
 	}
 
@@ -181,7 +187,7 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return new Promise<IConnectionProfile>(() => connectionProfile);
 	}
 
-	public listDatabases(connectionUri: string): Thenable<sqlops.ListDatabasesResult> {
+	public listDatabases(connectionUri: string): Thenable<azdata.ListDatabasesResult> {
 		return Promise.resolve(undefined);
 	}
 
@@ -215,7 +221,7 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return true;
 	}
 
-	getCapabilities(providerName: string): sqlops.DataProtocolServerCapabilities {
+	getCapabilities(providerName: string): azdata.DataProtocolServerCapabilities {
 		return undefined;
 	}
 
@@ -234,7 +240,7 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return [];
 	}
 
-	connectIfNotConnected(connection: IConnectionProfile, purpose?: 'dashboard' | 'insights' | 'connection'): Promise<string> {
+	connectIfNotConnected(connection: IConnectionProfile, purpose?: 'dashboard' | 'insights' | 'connection', saveConnection: boolean = false): Promise<string> {
 		return undefined;
 	}
 
@@ -254,11 +260,35 @@ export class TestConnectionManagementService implements IConnectionManagementSer
 		return undefined;
 	}
 
+	getServerInfo(profileId: string): azdata.ServerInfo {
+		return undefined;
+	}
+
 	getConnectionString(connectionId: string): Thenable<string> {
 		return undefined;
 	}
 
-	buildConnectionInfo(connectionString: string, provider?: string): Thenable<sqlops.ConnectionInfo> {
+	buildConnectionInfo(connectionString: string, provider?: string): Thenable<azdata.ConnectionInfo> {
+		return undefined;
+	}
+
+	providerRegistered(providerId: string): boolean {
+		return undefined;
+	}
+
+	getConnectionProfileById(profileId: string): IConnectionProfile {
+		return undefined;
+	}
+
+	getProviderProperties(providerName: string): ConnectionProviderProperties {
+		return undefined;
+	}
+
+	getConnectionIconId(connectionId: string): string {
+		return undefined;
+	}
+
+	getDefaultProviderId(): string {
 		return undefined;
 	}
 }

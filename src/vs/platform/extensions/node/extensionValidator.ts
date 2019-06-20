@@ -2,10 +2,9 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import * as nls from 'vs/nls';
-import pkg from 'vs/platform/node/package';
+import pkg from 'vs/platform/product/node/package';
 
 export interface IParsedVersion {
 	hasCaret: boolean;
@@ -16,7 +15,7 @@ export interface IParsedVersion {
 	minorMustEqual: boolean;
 	patchBase: number;
 	patchMustEqual: boolean;
-	preRelease: string;
+	preRelease: string | null;
 }
 
 export interface INormalizedVersion {
@@ -36,7 +35,7 @@ export function isValidVersionStr(version: string): boolean {
 	return (version === '*' || VERSION_REGEXP.test(version));
 }
 
-export function parseVersion(version: string): IParsedVersion {
+export function parseVersion(version: string): IParsedVersion | null {
 	if (!isValidVersionStr(version)) {
 		return null;
 	}
@@ -58,6 +57,9 @@ export function parseVersion(version: string): IParsedVersion {
 	}
 
 	let m = version.match(VERSION_REGEXP);
+	if (!m) {
+		return null;
+	}
 	return {
 		hasCaret: m[1] === '^',
 		hasGreaterEquals: m[1] === '>=',
@@ -71,7 +73,7 @@ export function parseVersion(version: string): IParsedVersion {
 	};
 }
 
-export function normalizeVersion(version: IParsedVersion): INormalizedVersion {
+export function normalizeVersion(version: IParsedVersion | null): INormalizedVersion | null {
 	if (!version) {
 		return null;
 	}
@@ -104,14 +106,14 @@ export function normalizeVersion(version: IParsedVersion): INormalizedVersion {
 }
 
 export function isValidVersion(_version: string | INormalizedVersion, _desiredVersion: string | INormalizedVersion): boolean {
-	let version: INormalizedVersion;
+	let version: INormalizedVersion | null;
 	if (typeof _version === 'string') {
 		version = normalizeVersion(parseVersion(_version));
 	} else {
 		version = _version;
 	}
 
-	let desiredVersion: INormalizedVersion;
+	let desiredVersion: INormalizedVersion | null;
 	if (typeof _desiredVersion === 'string') {
 		desiredVersion = normalizeVersion(parseVersion(_desiredVersion));
 	} else {
@@ -207,7 +209,7 @@ export interface IReducedExtensionDescription {
 	engines: {
 		vscode: string;
 		// {{SQL CARBON EDIT}}
-		sqlops?: string;
+		azdata?: string;
 	};
 	main?: string;
 }
@@ -220,12 +222,13 @@ export function isValidExtensionVersion(version: string, extensionDesc: IReduced
 	}
 
 	// {{SQL CARBON EDIT}}
-	return (extensionDesc.engines.sqlops && extensionDesc.engines.sqlops === '*') || isVersionValid(version, extensionDesc.engines.sqlops, notices);
+	return extensionDesc.engines.azdata ? extensionDesc.engines.azdata === '*' || isVersionValid(version, extensionDesc.engines.azdata, notices) : true;
 }
 
-export function isEngineValid(engine: string): boolean {
+// {{SQL CARBON EDIT}}
+export function isEngineValid(engine: string, version: string = pkg.version): boolean {
 	// TODO@joao: discuss with alex '*' doesn't seem to be a valid engine version
-	return engine === '*' || isVersionValid(pkg.version, engine);
+	return engine === '*' || isVersionValid(version, engine);
 }
 
 export function isVersionValid(currentVersion: string, requestedVersion: string, notices: string[] = []): boolean {

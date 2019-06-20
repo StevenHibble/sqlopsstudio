@@ -6,7 +6,7 @@
 
 import * as nls from 'vscode-nls';
 import * as vscode from 'vscode';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import { AgentUtils } from '../agentUtils';
 import { IAgentDialogData, AgentDialogMode } from '../interfaces';
 import { JobData } from './jobData';
@@ -17,7 +17,7 @@ export class AlertData implements IAgentDialogData {
 	public static readonly AlertTypeSqlServerEventString: string = localize('alertData.DefaultAlertTypString', 'SQL Server event alert');
 	public static readonly AlertTypePerformanceConditionString: string = localize('alertDialog.PerformanceCondition', 'SQL Server performance condition alert');
 	public static readonly AlertTypeWmiEventString: string = localize('alertDialog.WmiEvent', 'WMI event alert');
-	public static readonly DefaultAlertTypeString: string =  AlertData.AlertTypeSqlServerEventString;
+	public static readonly DefaultAlertTypeString: string = AlertData.AlertTypeSqlServerEventString;
 
 	ownerUri: string;
 	dialogMode: AgentDialogMode = AgentDialogMode.CREATE;
@@ -50,8 +50,8 @@ export class AlertData implements IAgentDialogData {
 	private jobModel: JobData;
 
 	constructor(
-		ownerUri:string,
-		alertInfo: sqlops.AgentAlertInfo,
+		ownerUri: string,
+		alertInfo: azdata.AgentAlertInfo,
 		jobModel?: JobData,
 		viaJobDialog: boolean = false
 	) {
@@ -69,7 +69,7 @@ export class AlertData implements IAgentDialogData {
 			this.eventDescriptionKeyword = alertInfo.eventDescriptionKeyword;
 			this.eventSource = alertInfo.eventSource;
 			this.hasNotification = alertInfo.hasNotification;
-			this.includeEventDescription = alertInfo.includeEventDescription.toString();
+			this.includeEventDescription = alertInfo.includeEventDescription ? alertInfo.includeEventDescription.toString() : null;
 			this.isEnabled = alertInfo.isEnabled;
 			this.jobId = alertInfo.jobId;
 			this.lastOccurrenceDate = alertInfo.lastOccurrenceDate;
@@ -82,7 +82,7 @@ export class AlertData implements IAgentDialogData {
 			this.databaseName = alertInfo.databaseName;
 			this.countResetDate = alertInfo.countResetDate;
 			this.categoryName = alertInfo.categoryName;
-			this.alertType = alertInfo.alertType.toString();
+			this.alertType = alertInfo.alertType ? alertInfo.alertType.toString() : null;
 			this.wmiEventNamespace = alertInfo.wmiEventNamespace;
 			this.wmiEventQuery = alertInfo.wmiEventQuery;
 		}
@@ -111,7 +111,7 @@ export class AlertData implements IAgentDialogData {
 		}
 	}
 
-	public toAgentAlertInfo(): sqlops.AgentAlertInfo {
+	public toAgentAlertInfo(): azdata.AgentAlertInfo {
 		return {
 			id: this.id,
 			name: this.name,
@@ -119,7 +119,7 @@ export class AlertData implements IAgentDialogData {
 			eventDescriptionKeyword: this.eventDescriptionKeyword,
 			eventSource: this.eventSource,
 			hasNotification: this.hasNotification,
-			includeEventDescription: sqlops.NotifyMethods.none, // this.includeEventDescription,
+			includeEventDescription: azdata.NotifyMethods.none, // this.includeEventDescription,
 			isEnabled: this.isEnabled,
 			jobId: this.jobId,
 			jobName: this.jobName,
@@ -139,13 +139,13 @@ export class AlertData implements IAgentDialogData {
 		};
 	}
 
-	private static getAlertTypeFromString(alertTypeString: string): sqlops.AlertType {
+	private static getAlertTypeFromString(alertTypeString: string): azdata.AlertType {
 		if (alertTypeString === AlertData.AlertTypePerformanceConditionString) {
-			return sqlops.AlertType.sqlServerPerformanceCondition;
+			return azdata.AlertType.sqlServerPerformanceCondition;
 		} else if (alertTypeString === AlertData.AlertTypeWmiEventString) {
-			return sqlops.AlertType.wmiEvent;
+			return azdata.AlertType.wmiEvent;
 		} else {
-			return sqlops.AlertType.sqlServerEvent;
+			return azdata.AlertType.sqlServerEvent;
 		}
 	}
 }

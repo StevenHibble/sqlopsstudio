@@ -3,21 +3,16 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import 'vs/css!./media/dialogModal';
-import { Modal, IModalOptions } from 'sql/base/browser/ui/modal/modal';
-import { attachModalDialogStyler } from 'sql/common/theme/styler';
+import { Modal, IModalOptions } from 'sql/workbench/browser/modal/modal';
+import { attachModalDialogStyler } from 'sql/platform/theme/common/styler';
 import { Wizard, DialogButton, WizardPage } from 'sql/platform/dialog/dialogTypes';
 import { DialogPane } from 'sql/platform/dialog/dialogPane';
-import { bootstrapAngular } from 'sql/services/bootstrap/bootstrapService';
+import { bootstrapAngular } from 'sql/platform/bootstrap/node/bootstrapService';
 import { DialogMessage } from 'sql/workbench/api/common/sqlExtHostTypes';
 import { DialogModule } from 'sql/platform/dialog/dialog.module';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
-import { Builder } from 'vs/base/browser/builder';
-import { IPartService } from 'vs/workbench/services/part/common/partService';
-import { IWorkbenchThemeService } from 'vs/workbench/services/themes/common/workbenchThemeService';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { attachButtonStyler } from 'vs/platform/theme/common/styler';
@@ -25,6 +20,10 @@ import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { Emitter } from 'vs/base/common/event';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
+import { append, $ } from 'vs/base/browser/dom';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { ILogService } from 'vs/platform/log/common/log';
+import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
 export class WizardModal extends Modal {
 	private _dialogPanes = new Map<WizardPage, DialogPane>();
@@ -48,14 +47,15 @@ export class WizardModal extends Modal {
 		private _wizard: Wizard,
 		name: string,
 		options: IModalOptions,
-		@IPartService partService: IPartService,
-		@IWorkbenchThemeService themeService: IWorkbenchThemeService,
+		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
+		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IInstantiationService private _instantiationService: IInstantiationService,
-		@IClipboardService clipboardService: IClipboardService
+		@IClipboardService clipboardService: IClipboardService,
+		@ILogService logService: ILogService
 	) {
-		super(_wizard.title, name, partService, telemetryService, clipboardService, themeService, contextKeyService, options);
+		super(_wizard.title, name, telemetryService, layoutService, clipboardService, themeService, logService, contextKeyService, options);
 		this._useDefaultMessageBoxLocation = false;
 	}
 
@@ -97,15 +97,6 @@ export class WizardModal extends Modal {
 
 		messageChangeHandler(this._wizard.message);
 		this._wizard.onMessageChange(message => messageChangeHandler(message));
-
-		this._wizard.pages.forEach((page, index) => {
-			page.onValidityChanged(valid => {
-				if (index === this._wizard.currentPage) {
-					this._nextButton.enabled = this._wizard.nextButton.enabled && page.valid;
-					this._doneButton.enabled = this._wizard.doneButton.enabled && page.valid;
-				}
-			});
-		});
 	}
 
 	private addDialogButton(button: DialogButton, onSelect: () => void = () => undefined, registerClickEvent: boolean = true, requirePageValid: boolean = false): Button {
@@ -130,20 +121,14 @@ export class WizardModal extends Modal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
-		let bodyBuilderObj;
-		new Builder(container).div({ class: 'dialogModal-body' }, (bodyBuilder) => {
-			bodyBuilderObj = bodyBuilder;
-			this._body = bodyBuilder.getHTMLElement();
-		});
+		this._body = append(container, $('div.dialogModal-body'));
 
 		this.initializeNavigation(this._body);
 
-		bodyBuilderObj.div({ class: 'dialog-message-and-page-container' }, (mpContainer) => {
-			this._messageAndPageContainer = mpContainer.getHTMLElement();
-			mpContainer.append(this._messageElement);
-			this._pageContainer = mpContainer.div({ class: 'dialogModal-page-container' }).getHTMLElement();
-		});
-
+		const mpContainer = append(this._body, $('div.dialog-message-and-page-container'));
+		this._messageAndPageContainer = mpContainer;
+		mpContainer.append(this._messageElement);
+		this._pageContainer = append(mpContainer, $('div.dialogModal-page-container'));
 
 		this._wizard.pages.forEach(page => {
 			this.registerPage(page);
@@ -171,7 +156,7 @@ export class WizardModal extends Modal {
 	}
 
 	private registerPage(page: WizardPage): void {
-		let dialogPane = new DialogPane(page.title, page.content, valid => page.notifyValidityChanged(valid), this._instantiationService, this._wizard.displayPageTitles, page.description);
+		let dialogPane = new DialogPane(page.title, page.content, valid => page.notifyValidityChanged(valid), this._instantiationService, this._themeService, this._wizard.displayPageTitles, page.description);
 		dialogPane.createBody(this._pageContainer);
 		this._dialogPanes.set(page, dialogPane);
 		page.onUpdate(() => this.setButtonsForPage(this._wizard.currentPage));
@@ -198,6 +183,13 @@ export class WizardModal extends Modal {
 		let currentPageValid = this._wizard.pages[this._wizard.currentPage].valid;
 		this._nextButton.enabled = this._wizard.nextButton.enabled && currentPageValid;
 		this._doneButton.enabled = this._wizard.doneButton.enabled && currentPageValid;
+
+		pageToShow.onValidityChanged(valid => {
+			if (index === this._wizard.currentPage) {
+				this._nextButton.enabled = this._wizard.nextButton.enabled && pageToShow.valid;
+				this._doneButton.enabled = this._wizard.doneButton.enabled && pageToShow.valid;
+			}
+		});
 	}
 
 	private setButtonsForPage(index: number) {

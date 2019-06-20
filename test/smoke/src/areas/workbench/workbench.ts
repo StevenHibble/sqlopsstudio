@@ -11,7 +11,7 @@ import { Extensions } from '../extensions/extensions';
 import { Search } from '../search/search';
 import { Editor } from '../editor/editor';
 import { SCM } from '../git/scm';
-import { Debug } from '../debug/debug';
+import { Debug } from '../debug/debugSmoke';
 import { StatusBar } from '../statusbar/statusbar';
 import { Problems } from '../problems/problems';
 import { SettingsEditor } from '../preferences/settings';
@@ -19,6 +19,12 @@ import { KeybindingsEditor } from '../preferences/keybindings';
 import { Editors } from '../editor/editors';
 import { Code } from '../../vscode/code';
 import { Terminal } from '../terminal/terminal';
+
+// {{SQL CARBON EDIT}}
+import { ConnectionDialog } from '../../sql/connectionDialog/connectionDialog';
+import { Profiler } from '../../sql/profiler/profiler';
+import { QueryEditors } from '../../sql/queryEditor/queryEditors';
+// {{END}}
 
 export interface Commands {
 	runCommand(command: string): Promise<any>;
@@ -42,6 +48,12 @@ export class Workbench {
 	readonly keybindingsEditor: KeybindingsEditor;
 	readonly terminal: Terminal;
 
+	// {{SQL CARBON EDIT}}
+	readonly connectionDialog: ConnectionDialog;
+	readonly profiler: Profiler;
+	readonly queryEditors: QueryEditors;
+	// {{END}}
+
 	constructor(code: Code, userDataPath: string) {
 		this.editors = new Editors(code);
 		this.quickopen = new QuickOpen(code, this.editors);
@@ -57,7 +69,11 @@ export class Workbench {
 		this.problems = new Problems(code);
 		this.settingsEditor = new SettingsEditor(code, userDataPath, this.editors, this.editor, this.quickopen);
 		this.keybindingsEditor = new KeybindingsEditor(code);
-		this.terminal = new Terminal(code);
+		this.terminal = new Terminal(code, this.quickopen);
+		// {{SQL CARBON EDIT}}
+		this.connectionDialog = new ConnectionDialog(code);
+		this.profiler = new Profiler(code, this.quickopen);
+		this.queryEditors = new QueryEditors(code, this.quickopen);
+		// {{END}}
 	}
 }
-

@@ -3,26 +3,24 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import * as sqlops from 'sqlops';
-import { ConnectionManagementInfo } from 'sql/parts/connection/common/connectionManagementInfo';
-import { ICapabilitiesService, clientCapabilities, ProviderFeatures } from 'sql/services/capabilities/capabilitiesService';
+import * as azdata from 'azdata';
+import { ConnectionManagementInfo } from 'sql/platform/connection/common/connectionManagementInfo';
+import { ICapabilitiesService, ProviderFeatures } from 'sql/platform/capabilities/common/capabilitiesService';
 import { ConnectionOptionSpecialType, ServiceOptionType } from 'sql/workbench/api/common/sqlExtHostTypes';
 
 import { Event, Emitter } from 'vs/base/common/event';
 import { Action } from 'vs/base/common/actions';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 export class CapabilitiesTestService implements ICapabilitiesService {
 
 	public _serviceBrand: any;
 
-	private _providers: sqlops.CapabilitiesProvider[] = [];
-
 	public capabilities: { [id: string]: ProviderFeatures } = {};
 
 	constructor() {
 
-		let connectionProvider: sqlops.ConnectionOption[] = [
+		let connectionProvider: azdata.ConnectionOption[] = [
 			{
 				name: 'connectionName',
 				displayName: undefined,
@@ -97,12 +95,11 @@ export class CapabilitiesTestService implements ICapabilitiesService {
 			}
 		];
 		let msSQLCapabilities = {
-			providerId: 'MSSQL',
+			providerId: mssqlProviderName,
 			displayName: 'MSSQL',
 			connectionOptions: connectionProvider,
 		};
-		this.capabilities['MSSQL'] = { connection: msSQLCapabilities };
-
+		this.capabilities[mssqlProviderName] = { connection: msSQLCapabilities };
 	}
 
 	/**
@@ -112,8 +109,8 @@ export class CapabilitiesTestService implements ICapabilitiesService {
 		return this.capabilities[provider];
 	}
 
-	public getLegacyCapabilities(provider: string): sqlops.DataProtocolServerCapabilities {
-		throw new Error("Method not implemented.");
+	public getLegacyCapabilities(provider: string): azdata.DataProtocolServerCapabilities {
+		throw new Error('Method not implemented.');
 	}
 
 	public get providers(): { [id: string]: ProviderFeatures } {
@@ -122,13 +119,12 @@ export class CapabilitiesTestService implements ICapabilitiesService {
 
 	/**
 	 * Register the capabilities provider and query the provider for its capabilities
-	 * @param provider
 	 */
-	public registerProvider(provider: sqlops.CapabilitiesProvider): void {
+	public registerProvider(provider: azdata.CapabilitiesProvider): void {
 	}
 
 	// Event Emitters
-	public get onProviderRegisteredEvent(): Event<sqlops.DataProtocolServerCapabilities> {
+	public get onProviderRegisteredEvent(): Event<azdata.DataProtocolServerCapabilities> {
 		return undefined;
 	}
 
@@ -140,7 +136,10 @@ export class CapabilitiesTestService implements ICapabilitiesService {
 		return Promise.resolve(null);
 	}
 
+	public fireCapabilitiesRegistered(providerFeatures: ProviderFeatures): void {
+		this._onCapabilitiesRegistered.fire(providerFeatures);
+	}
+
 	private _onCapabilitiesRegistered = new Emitter<ProviderFeatures>();
 	public readonly onCapabilitiesRegistered = this._onCapabilitiesRegistered.event;
 }
-

@@ -3,6 +3,8 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import 'vs/css!./media/checkbox';
+
 import { Color } from 'vs/base/common/color';
 import { Event, Emitter } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
@@ -23,7 +25,7 @@ export interface ICheckboxStyles {
 export class Checkbox extends Widget {
 	private _el: HTMLInputElement;
 	private _label: HTMLSpanElement;
-	private disabledCheckboxForeground: Color;
+	private disabledCheckboxForeground?: Color;
 
 	private _onChange = new Emitter<boolean>();
 	public readonly onChange: Event<boolean> = this._onChange.event;

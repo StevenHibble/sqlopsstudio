@@ -3,27 +3,25 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
 import { AccountProviderStub, AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 import { ExtHostAccountManagement } from 'sql/workbench/api/node/extHostAccountManagement';
 import { TestRPCProtocol } from 'vs/workbench/test/electron-browser/api/testRPCProtocol';
 import { TestInstantiationService } from 'vs/platform/instantiation/test/common/instantiationServiceMock';
-import { IRPCProtocol } from 'vs/workbench/services/extensions/node/proxyIdentifier';
+import { IRPCProtocol } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import { SqlMainContext } from 'sql/workbench/api/node/sqlExtHost.protocol';
 import { MainThreadAccountManagement } from 'sql/workbench/api/node/mainThreadAccountManagement';
-import { IAccountManagementService } from 'sql/services/accountManagement/interfaces';
+import { IAccountManagementService, AzureResource } from 'sql/platform/accounts/common/interfaces';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 const IRPCProtocol = createDecorator<IRPCProtocol>('rpcProtocol');
 
 // SUITE STATE /////////////////////////////////////////////////////////////
 let instantiationService: TestInstantiationService;
-let mockAccountMetadata: sqlops.AccountProviderMetadata;
-let mockAccount: sqlops.Account;
+let mockAccountMetadata: azdata.AccountProviderMetadata;
+let mockAccount: azdata.Account;
 let threadService: TestRPCProtocol;
 
 // TESTS ///////////////////////////////////////////////////////////////////
@@ -54,6 +52,7 @@ suite('ExtHostAccountManagement', () => {
 			properties: {},
 			displayInfo: {
 				displayName: 'Test Account',
+				userId: 'user@email.com',
 				contextualDisplayName: 'Test Kind Of Account',
 				accountType: 'test'
 			},
@@ -272,7 +271,8 @@ suite('ExtHostAccountManagement', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Azure Account 1'
+				displayName: 'Azure Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -285,7 +285,8 @@ suite('ExtHostAccountManagement', () => {
 			displayInfo: {
 				contextualDisplayName: 'Work/School Account',
 				accountType: 'microsoft',
-				displayName: 'Azure Account 2'
+				displayName: 'Azure Account 2',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -296,7 +297,7 @@ suite('ExtHostAccountManagement', () => {
 
 		let mockAccountManagementService = getMockAccountManagementService(mockAccounts);
 		instantiationService.stub(IAccountManagementService, mockAccountManagementService.object);
-		let accountManagementService = instantiationService.createInstance(MainThreadAccountManagement);
+		let accountManagementService = instantiationService.createInstance(MainThreadAccountManagement, undefined);
 		threadService.set(SqlMainContext.MainThreadAccountManagement, accountManagementService);
 
 		// Setup: Create ext host account management with registered account provider
@@ -347,7 +348,8 @@ suite('ExtHostAccountManagement', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Azure Account 1'
+				displayName: 'Azure Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -365,9 +367,9 @@ suite('ExtHostAccountManagement', () => {
 
 		extHost.$getAllAccounts()
 			.then((accounts) => {
-		    		// If: I get security token it will not throw
-					return extHost.$getSecurityToken(mockAccount1);
-				}
+				// If: I get security token it will not throw
+				return extHost.$getSecurityToken(mockAccount1, AzureResource.ResourceManagement);
+			}
 			).then(() => done(), (err) => done(new Error(err)));
 	});
 
@@ -385,7 +387,8 @@ suite('ExtHostAccountManagement', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Azure Account 1'
+				displayName: 'Azure Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -409,27 +412,28 @@ suite('ExtHostAccountManagement', () => {
 			displayInfo: {
 				contextualDisplayName: 'Work/School Account',
 				accountType: 'microsoft',
-				displayName: 'Azure Account 2'
+				displayName: 'Azure Account 2',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
 		};
 
 		extHost.$getAllAccounts()
-		.then(accounts => {
-			return extHost.$getSecurityToken(mockAccount2);
-		})
-		.then((noError) => {
-			done(new Error('Expected getSecurityToken to throw'));
-		}, (err) => {
-			// Expected error caught
-			done();
-		});
+			.then(accounts => {
+				return extHost.$getSecurityToken(mockAccount2, AzureResource.ResourceManagement);
+			})
+			.then((noError) => {
+				done(new Error('Expected getSecurityToken to throw'));
+			}, (err) => {
+				// Expected error caught
+				done();
+			});
 	});
 });
 
-function getMockAccountProvider(): TypeMoq.Mock<sqlops.AccountProvider> {
-	let mock = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+function getMockAccountProvider(): TypeMoq.Mock<azdata.AccountProvider> {
+	let mock = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 	mock.setup((obj) => obj.clear(TypeMoq.It.isValue(mockAccount.key)))
 		.returns(() => Promise.resolve(undefined));
 	mock.setup((obj) => obj.refresh(TypeMoq.It.isValue(mockAccount)))
@@ -442,15 +446,15 @@ function getMockAccountProvider(): TypeMoq.Mock<sqlops.AccountProvider> {
 	return mock;
 }
 
-function getMockAccountManagementService(accounts: sqlops.Account[]): TypeMoq.Mock<AccountManagementTestService> {
+function getMockAccountManagementService(accounts: azdata.Account[]): TypeMoq.Mock<AccountManagementTestService> {
 	let mockAccountManagementService = TypeMoq.Mock.ofType(AccountManagementTestService);
 
 	mockAccountManagementService.setup(x => x.getAccountsForProvider(TypeMoq.It.isAny()))
 		.returns(() => Promise.resolve(accounts));
-	mockAccountManagementService.setup(x => x.getSecurityToken(TypeMoq.It.isValue(accounts[0])))
-	    .returns(() => Promise.resolve({}));
+	mockAccountManagementService.setup(x => x.getSecurityToken(TypeMoq.It.isValue(accounts[0]), TypeMoq.It.isAny()))
+		.returns(() => Promise.resolve({}));
 	mockAccountManagementService.setup(x => x.updateAccountListEvent)
-	    .returns(() => () => { return undefined; } );
+		.returns(() => () => { return undefined; });
 
 	return mockAccountManagementService;
 }

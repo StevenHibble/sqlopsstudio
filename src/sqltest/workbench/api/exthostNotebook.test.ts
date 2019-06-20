@@ -2,20 +2,20 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as vscode from 'vscode';
 import * as assert from 'assert';
 import * as TypeMoq from 'typemoq';
 
-import URI from 'vs/base/common/uri';
-import { IMainContext } from 'vs/workbench/api/node/extHost.protocol';
+import { URI } from 'vs/base/common/uri';
+import { IMainContext } from 'vs/workbench/api/common/extHost.protocol';
 
 import { ExtHostNotebook } from 'sql/workbench/api/node/extHostNotebook';
 import { MainThreadNotebookShape } from 'sql/workbench/api/node/sqlExtHost.protocol';
 import * as testUtils from '../../utils/testUtils';
 import { INotebookManagerDetails } from 'sql/workbench/api/common/sqlExtHostTypes';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 suite('ExtHostNotebook Tests', () => {
 
@@ -24,7 +24,7 @@ suite('ExtHostNotebook Tests', () => {
 	let notebookUri: URI;
 	let notebookProviderMock: TypeMoq.Mock<NotebookProviderStub>;
 	setup(() => {
-		mockProxy = TypeMoq.Mock.ofInstance(<MainThreadNotebookShape> {
+		mockProxy = TypeMoq.Mock.ofInstance(<MainThreadNotebookShape>{
 			$registerNotebookProvider: (providerId, handle) => undefined,
 			$unregisterNotebookProvider: (handle) => undefined,
 			dispose: () => undefined
@@ -106,24 +106,25 @@ suite('ExtHostNotebook Tests', () => {
 			extHostNotebook.registerNotebookProvider(notebookProviderMock.object);
 			mockProxy.verify(p =>
 				p.$registerNotebookProvider(TypeMoq.It.isValue(notebookProviderMock.object.providerId),
-				TypeMoq.It.isAnyNumber()), TypeMoq.Times.once());
-				// It shouldn't unregister until requested
-				mockProxy.verify(p => p.$unregisterNotebookProvider(TypeMoq.It.isValue(savedHandle)), TypeMoq.Times.never());
+					TypeMoq.It.isAnyNumber()), TypeMoq.Times.once());
+			// It shouldn't unregister until requested
+			mockProxy.verify(p => p.$unregisterNotebookProvider(TypeMoq.It.isValue(savedHandle)), TypeMoq.Times.never());
 
 		});
 
-		test('Should call unregister on disposing', () => {
+		test('Should not call unregister on disposing', () => {
 			let disposable = extHostNotebook.registerNotebookProvider(notebookProviderMock.object);
 			disposable.dispose();
-			mockProxy.verify(p => p.$unregisterNotebookProvider(TypeMoq.It.isValue(savedHandle)), TypeMoq.Times.once());
+			mockProxy.verify(p => p.$unregisterNotebookProvider(TypeMoq.It.isValue(savedHandle)), TypeMoq.Times.never());
 		});
 	});
 });
 
-class NotebookProviderStub implements sqlops.nb.NotebookProvider {
+class NotebookProviderStub implements azdata.nb.NotebookProvider {
 	providerId: string = 'TestProvider';
+	standardKernels: azdata.nb.IStandardKernel[] = [{ name: 'fakeKernel', displayName: 'fakeKernel', connectionProviderIds: [mssqlProviderName] }];
 
-	getNotebookManager(notebookUri: vscode.Uri): Thenable<sqlops.nb.NotebookManager> {
+	getNotebookManager(notebookUri: vscode.Uri): Thenable<azdata.nb.NotebookManager> {
 		throw new Error('Method not implemented.');
 	}
 	handleNotebookClosed(notebookUri: vscode.Uri): void {
@@ -131,16 +132,16 @@ class NotebookProviderStub implements sqlops.nb.NotebookProvider {
 	}
 }
 
-class NotebookManagerStub implements sqlops.nb.NotebookManager {
-	get contentManager(): sqlops.nb.ContentManager {
+class NotebookManagerStub implements azdata.nb.NotebookManager {
+	get contentManager(): azdata.nb.ContentManager {
 		return undefined;
 	}
 
-	get sessionManager(): sqlops.nb.SessionManager {
+	get sessionManager(): azdata.nb.SessionManager {
 		return undefined;
 	}
 
-	get serverManager(): sqlops.nb.ServerManager {
+	get serverManager(): azdata.nb.ServerManager {
 		return undefined;
 	}
 }

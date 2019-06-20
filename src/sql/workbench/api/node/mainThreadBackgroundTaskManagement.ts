@@ -2,17 +2,16 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
-import { ITaskService } from 'sql/parts/taskHistory/common/taskService';
+import { ITaskService } from 'sql/platform/tasks/common/tasksService';
 import { MainThreadBackgroundTaskManagementShape, SqlMainContext, ExtHostBackgroundTaskManagementShape, SqlExtHostContext } from 'sql/workbench/api/node/sqlExtHost.protocol';
 
-import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
+import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
 import { Disposable } from 'vs/base/common/lifecycle';
 
 
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 
 export enum TaskStatus {
 	NotStarted = 0,
@@ -41,12 +40,12 @@ export class MainThreadBackgroundTaskManagement extends Disposable implements Ma
 		}));
 	}
 
-	$registerTask(taskInfo: sqlops.TaskInfo): void {
+	$registerTask(taskInfo: azdata.TaskInfo): void {
 		this._taskService.createNewTask(taskInfo);
 		this._proxy.$onTaskRegistered(taskInfo.taskId);
 	}
 
-	$updateTask(taskProgressInfo: sqlops.TaskProgressInfo): void {
+	$updateTask(taskProgressInfo: azdata.TaskProgressInfo): void {
 		this._taskService.updateTask(taskProgressInfo);
 	}
 }

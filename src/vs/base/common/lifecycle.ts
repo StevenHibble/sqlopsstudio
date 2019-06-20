@@ -3,8 +3,6 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import { once } from 'vs/base/common/functional';
 
 export interface IDisposable {
@@ -17,9 +15,9 @@ export function isDisposable<E extends object>(thing: E): thing is E & IDisposab
 }
 
 export function dispose<T extends IDisposable>(disposable: T): T;
-export function dispose<T extends IDisposable>(...disposables: T[]): T[];
+export function dispose<T extends IDisposable>(...disposables: Array<T | undefined>): T[];
 export function dispose<T extends IDisposable>(disposables: T[]): T[];
-export function dispose<T extends IDisposable>(first: T | T[], ...rest: T[]): T | T[] {
+export function dispose<T extends IDisposable>(first: T | T[], ...rest: T[]): T | T[] | undefined {
 	if (Array.isArray(first)) {
 		first.forEach(d => d && d.dispose());
 		return [];
@@ -51,12 +49,20 @@ export abstract class Disposable implements IDisposable {
 	protected _toDispose: IDisposable[] = [];
 	protected get toDispose(): IDisposable[] { return this._toDispose; }
 
+	private _lifecycle_disposable_isDisposed = false;
+
 	public dispose(): void {
+		this._lifecycle_disposable_isDisposed = true;
 		this._toDispose = dispose(this._toDispose);
 	}
 
 	protected _register<T extends IDisposable>(t: T): T {
-		this._toDispose.push(t);
+		if (this._lifecycle_disposable_isDisposed) {
+			console.warn('Registering disposable on object that has already been disposed.');
+			t.dispose();
+		} else {
+			this._toDispose.push(t);
+		}
 
 		return t;
 	}
@@ -82,7 +88,7 @@ export abstract class ReferenceCollection<T> {
 		const { object } = reference;
 		const dispose = once(() => {
 			if (--reference.counter === 0) {
-				this.destroyReferencedObject(reference.object);
+				this.destroyReferencedObject(key, reference.object);
 				delete this.references[key];
 			}
 		});
@@ -93,7 +99,7 @@ export abstract class ReferenceCollection<T> {
 	}
 
 	protected abstract createReferencedObject(key: string): T;
-	protected abstract destroyReferencedObject(object: T): void;
+	protected abstract destroyReferencedObject(key: string, object: T): void;
 }
 
 export class ImmortalReference<T> implements IReference<T> {

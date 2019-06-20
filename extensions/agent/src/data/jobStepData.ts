@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as nls from 'vscode-nls';
 import * as vscode from 'vscode';
 import { AgentUtils } from '../agentUtils';
@@ -48,7 +48,7 @@ export class JobStepData implements IAgentDialogData {
 	private jobModel: JobData;
 	private viaJobDialog: boolean;
 
-	constructor(ownerUri:string, jobModel?: JobData, viaJobDialog: boolean = false) {
+	constructor(ownerUri: string, jobModel?: JobData, viaJobDialog: boolean = false) {
 		this.ownerUri = ownerUri;
 		this.jobName = jobModel.name;
 		this.jobModel = jobModel;
@@ -95,39 +95,40 @@ export class JobStepData implements IAgentDialogData {
 		};
 	}
 
-	public static convertToJobStepData(jobStepInfo: sqlops.AgentJobStepInfo, jobData: JobData) {
+	public static convertToJobStepData(jobStepInfo: azdata.AgentJobStepInfo, jobData: JobData) {
 		let stepData = new JobStepData(jobData.ownerUri, jobData);
 		stepData.ownerUri = jobData.ownerUri;
 		stepData.jobId = jobStepInfo.jobId;
 		stepData.jobName = jobStepInfo.jobName;
 		stepData.script = jobStepInfo.script;
 		stepData.scriptName = jobStepInfo.scriptName,
-		stepData.stepName = jobStepInfo.stepName,
-		stepData.subSystem = jobStepInfo.subSystem,
-		stepData.id = jobStepInfo.id,
-		stepData.failureAction = jobStepInfo.failureAction,
-		stepData.successAction = jobStepInfo.successAction,
-		stepData.failStepId = jobStepInfo.failStepId,
-		stepData.successStepId = jobStepInfo.successStepId,
-		stepData.command = jobStepInfo.command,
-		stepData.commandExecutionSuccessCode = jobStepInfo.commandExecutionSuccessCode,
-		stepData.databaseName = jobStepInfo.databaseName,
-		stepData.databaseUserName = jobStepInfo.databaseUserName,
-		stepData.server = jobStepInfo.server,
-		stepData.outputFileName = jobStepInfo.outputFileName,
-		stepData.appendToLogFile = jobStepInfo.appendToLogFile,
-		stepData.appendToStepHist = jobStepInfo.appendToStepHist,
-		stepData.writeLogToTable = jobStepInfo.writeLogToTable,
-		stepData.appendLogToTable = jobStepInfo.appendLogToTable,
-		stepData.retryAttempts = jobStepInfo.retryAttempts,
-		stepData.retryInterval = jobStepInfo.retryInterval,
-		stepData.proxyName = jobStepInfo.proxyName;
+			stepData.stepName = jobStepInfo.stepName,
+			stepData.subSystem = jobStepInfo.subSystem,
+			stepData.id = jobStepInfo.id,
+			stepData.failureAction = jobStepInfo.failureAction,
+			stepData.successAction = jobStepInfo.successAction,
+			stepData.failStepId = jobStepInfo.failStepId,
+			stepData.successStepId = jobStepInfo.successStepId,
+			stepData.command = jobStepInfo.command,
+			stepData.commandExecutionSuccessCode = jobStepInfo.commandExecutionSuccessCode,
+			stepData.databaseName = jobStepInfo.databaseName,
+			stepData.databaseUserName = jobStepInfo.databaseUserName,
+			stepData.server = jobStepInfo.server,
+			stepData.outputFileName = jobStepInfo.outputFileName,
+			stepData.appendToLogFile = jobStepInfo.appendToLogFile,
+			stepData.appendToStepHist = jobStepInfo.appendToStepHist,
+			stepData.writeLogToTable = jobStepInfo.writeLogToTable,
+			stepData.appendLogToTable = jobStepInfo.appendLogToTable,
+			stepData.retryAttempts = jobStepInfo.retryAttempts,
+			stepData.retryInterval = jobStepInfo.retryInterval,
+			stepData.proxyName = jobStepInfo.proxyName;
 		stepData.dialogMode = AgentDialogMode.EDIT;
+		stepData.viaJobDialog = true;
 		return stepData;
 	}
 
-	public static convertToAgentJobStepInfo(jobStepData: JobStepData): sqlops.AgentJobStepInfo {
-		let result: sqlops.AgentJobStepInfo = {
+	public static convertToAgentJobStepInfo(jobStepData: JobStepData): azdata.AgentJobStepInfo {
+		let result: azdata.AgentJobStepInfo = {
 			jobId: jobStepData.jobId,
 			jobName: jobStepData.jobName,
 			script: jobStepData.script,

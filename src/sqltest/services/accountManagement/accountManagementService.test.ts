@@ -3,31 +3,30 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
-import AccountStore from 'sql/services/accountManagement/accountStore';
-import { AccountDialogController } from 'sql/parts/accountManagement/accountDialog/accountDialogController';
-import { AccountManagementService } from 'sql/services/accountManagement/accountManagementService';
-import { AccountAdditionResult, AccountProviderAddedEventParams, UpdateAccountListEventParams } from 'sql/services/accountManagement/eventTypes';
-import { IAccountStore } from 'sql/services/accountManagement/interfaces';
+import AccountStore from 'sql/platform/accounts/common/accountStore';
+import { AccountDialogController } from 'sql/platform/accounts/browser/accountDialogController';
+import { AccountManagementService } from 'sql/workbench/services/accountManagement/browser/accountManagementService';
+import { AccountAdditionResult, AccountProviderAddedEventParams, UpdateAccountListEventParams } from 'sql/platform/accounts/common/eventTypes';
+import { IAccountStore } from 'sql/platform/accounts/common/interfaces';
 import { AccountProviderStub } from 'sqltest/stubs/accountManagementStubs';
 import { EventVerifierSingle } from 'sqltest/utils/eventVerifier';
 import { InstantiationService } from 'vs/platform/instantiation/common/instantiationService';
+import { TestStorageService } from 'vs/workbench/test/workbenchTestServices';
 
 // SUITE CONSTANTS /////////////////////////////////////////////////////////
-const hasAccountProvider: sqlops.AccountProviderMetadata = {
+const hasAccountProvider: azdata.AccountProviderMetadata = {
 	id: 'hasAccounts',
 	displayName: 'Provider with Accounts'
 };
-const noAccountProvider: sqlops.AccountProviderMetadata = {
+const noAccountProvider: azdata.AccountProviderMetadata = {
 	id: 'noAccounts',
 	displayName: 'Provider without Accounts'
 };
 
-const account: sqlops.Account = {
+const account: azdata.Account = {
 	key: {
 		providerId: hasAccountProvider.id,
 		accountId: 'testAccount1'
@@ -35,12 +34,14 @@ const account: sqlops.Account = {
 	displayInfo: {
 		displayName: 'Test Account 1',
 		accountType: 'test',
-		contextualDisplayName: 'Azure Account'
+		contextualDisplayName: 'Azure Account',
+		userId: 'user@email.com'
+
 	},
 	isStale: false,
 	properties: {}
 };
-const accountList: sqlops.Account[] = [account];
+const accountList: azdata.Account[] = [account];
 
 suite('Account Management Service Tests:', () => {
 	test('Constructor', () => {
@@ -69,7 +70,7 @@ suite('Account Management Service Tests:', () => {
 			.returns(() => Promise.resolve(true));
 
 		// ... Register a account provider with the management service
-		let mockProvider = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+		let mockProvider = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 		mockProvider.setup(x => x.clear(TypeMoq.It.isAny())).returns(() => Promise.resolve());
 		state.accountManagementService._providers[hasAccountProvider.id] = {
 			accounts: [account],
@@ -85,8 +86,8 @@ suite('Account Management Service Tests:', () => {
 				state.mockAccountStore.verify(x => x.remove(TypeMoq.It.isAny()), TypeMoq.Times.once());
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -102,14 +103,13 @@ suite('Account Management Service Tests:', () => {
 			}));
 
 		// ... Register a account provider with the management service
-		let mockProvider = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+		let mockProvider = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 		mockProvider.setup(x => x.clear(TypeMoq.It.isAny())).returns(() => Promise.resolve());
 		state.accountManagementService._providers[hasAccountProvider.id] = {
 			accounts: [account],
 			provider: mockProvider.object,
 			metadata: hasAccountProvider
 		};
-
 		// If: I update an account that exists
 		state.accountManagementService.accountUpdated(account)
 			.then(() => {
@@ -125,8 +125,8 @@ suite('Account Management Service Tests:', () => {
 				});
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -168,8 +168,8 @@ suite('Account Management Service Tests:', () => {
 				});
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -211,8 +211,8 @@ suite('Account Management Service Tests:', () => {
 				});
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -221,13 +221,13 @@ suite('Account Management Service Tests:', () => {
 		let ams = getTestState().accountManagementService;
 
 		// If: I add an account when the provider doesn't exist
-		// Then: It should be rejected
-		ams.addAccount('doesNotExist')
-			.then(
-			() => done('Promise resolved when it should have rejected'),
-			() => done()
-			);
-
+		// Then: It should not resolve
+		Promise.race([
+			new Promise((resolve, reject) => setTimeout(() => resolve(), 100)),
+			ams.addAccount('doesNotExist').then((
+				() => done('Promise resolved when the provider did not exist')
+			))
+		]).then(() => done(), err => done(err));
 	});
 
 	test('Add account - provider exists, provider fails', done => {
@@ -240,8 +240,8 @@ suite('Account Management Service Tests:', () => {
 		// Then: Nothing should have happened and the promise should be resolved
 		return state.accountManagementService.addAccount(noAccountProvider.id)
 			.then(
-			() => done('Add account promise resolved when it should have rejected'),
-			() => done()
+				() => done('Add account promise resolved when it should have rejected'),
+				() => done()
 			);
 	});
 
@@ -255,8 +255,8 @@ suite('Account Management Service Tests:', () => {
 		// Then: Nothing should have happened and the promise should be resolved
 		return state.accountManagementService.addAccount(noAccountProvider.id)
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -278,8 +278,8 @@ suite('Account Management Service Tests:', () => {
 				assert.equal(result[0], noAccountProvider);
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -295,8 +295,8 @@ suite('Account Management Service Tests:', () => {
 				assert.equal(result.length, 0);
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -305,12 +305,13 @@ suite('Account Management Service Tests:', () => {
 		let ams = getTestState().accountManagementService;
 
 		// If: I get accounts when the provider doesn't exist
-		// Then: It should be rejected
-		ams.getAccountsForProvider('doesNotExist')
-			.then(
-			() => done('Promise resolved when it should have rejected'),
-			() => done()
-			);
+		// Then: It should not resolve
+		Promise.race([
+			new Promise((resolve, reject) => setTimeout(() => resolve(), 100)),
+			ams.getAccountsForProvider('doesNotExist').then((
+				() => done('Promise resolved when the provider did not exist')
+			))
+		]).then(() => done(), err => done(err));
 	});
 
 	test('Get accounts by provider - provider exists, no accounts', done => {
@@ -330,8 +331,8 @@ suite('Account Management Service Tests:', () => {
 				assert.equal(result.length, 0);
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -351,8 +352,8 @@ suite('Account Management Service Tests:', () => {
 				assert.equal(result, accountList);
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -364,7 +365,7 @@ suite('Account Management Service Tests:', () => {
 			.returns(() => Promise.resolve(true));
 
 		// ... Register a account provider with the management service
-		let mockProvider = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+		let mockProvider = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 		mockProvider.setup(x => x.clear(TypeMoq.It.isAny())).returns(() => Promise.resolve());
 		state.accountManagementService._providers[hasAccountProvider.id] = {
 			accounts: [account],
@@ -393,8 +394,8 @@ suite('Account Management Service Tests:', () => {
 				});
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -432,8 +433,8 @@ suite('Account Management Service Tests:', () => {
 				state.eventVerifierUpdate.assertNotFired();
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -459,8 +460,8 @@ suite('Account Management Service Tests:', () => {
 				mockDialogController.verify(x => x.openAccountDialog(), TypeMoq.Times.once());
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -487,8 +488,8 @@ suite('Account Management Service Tests:', () => {
 				mockDialogController.verify(x => x.openAccountDialog(), TypeMoq.Times.exactly(2));
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -524,8 +525,8 @@ suite('Account Management Service Tests:', () => {
 				});
 			})
 			.then(
-			() => done(),
-			err => done(err)
+				() => done(),
+				err => done(err)
 			);
 	});
 
@@ -566,12 +567,12 @@ function getTestState(): AccountManagementState {
 	let mockMemento = {};
 
 	// Create the account management service
-	let ams = new AccountManagementService(mockMemento, mockInstantiationService.object, null, null);
+	let ams = new AccountManagementService(mockMemento, mockInstantiationService.object, new TestStorageService(), null);
 
 	// Wire up event handlers
 	let evUpdate = new EventVerifierSingle<UpdateAccountListEventParams>();
 	let evAddProvider = new EventVerifierSingle<AccountProviderAddedEventParams>();
-	let evRemoveProvider = new EventVerifierSingle<sqlops.AccountProviderMetadata>();
+	let evRemoveProvider = new EventVerifierSingle<azdata.AccountProviderMetadata>();
 	ams.updateAccountListEvent(evUpdate.eventHandler);
 	ams.addAccountProviderEvent(evAddProvider.eventHandler);
 	ams.removeAccountProviderEvent(evRemoveProvider.eventHandler);
@@ -587,8 +588,8 @@ function getTestState(): AccountManagementState {
 	};
 }
 
-function getMockAccountProvider(): TypeMoq.Mock<sqlops.AccountProvider> {
-	let mockProvider = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+function getMockAccountProvider(): TypeMoq.Mock<azdata.AccountProvider> {
+	let mockProvider = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 	mockProvider.setup(x => x.clear(TypeMoq.It.isAny())).returns(() => Promise.resolve());
 	mockProvider.setup(x => x.initialize(TypeMoq.It.isAny())).returns(param => Promise.resolve(param));
 	mockProvider.setup(x => x.prompt()).returns(() => Promise.resolve(account));
@@ -596,8 +597,8 @@ function getMockAccountProvider(): TypeMoq.Mock<sqlops.AccountProvider> {
 	return mockProvider;
 }
 
-function getFailingMockAccountProvider(cancel: boolean): TypeMoq.Mock<sqlops.AccountProvider> {
-	let mockProvider = TypeMoq.Mock.ofType<sqlops.AccountProvider>(AccountProviderStub);
+function getFailingMockAccountProvider(cancel: boolean): TypeMoq.Mock<azdata.AccountProvider> {
+	let mockProvider = TypeMoq.Mock.ofType<azdata.AccountProvider>(AccountProviderStub);
 	mockProvider.setup(x => x.clear(TypeMoq.It.isAny()))
 		.returns(() => Promise.resolve());
 	mockProvider.setup(x => x.initialize(TypeMoq.It.isAny()))
@@ -605,13 +606,13 @@ function getFailingMockAccountProvider(cancel: boolean): TypeMoq.Mock<sqlops.Acc
 	mockProvider.setup(x => x.prompt())
 		.returns(() => {
 			return cancel
-				? Promise.reject(<sqlops.UserCancelledSignInError>{ userCancelledSignIn: true }).then()
+				? Promise.resolve(<azdata.PromptFailedResult>{ canceled: true }).then()
 				: Promise.reject(new Error()).then();
 		});
 	mockProvider.setup(x => x.refresh(TypeMoq.It.isAny()))
 		.returns(() => {
 			return cancel
-				? Promise.reject(<sqlops.UserCancelledSignInError>{ userCancelledSignIn: true }).then()
+				? Promise.resolve(<azdata.PromptFailedResult>{ canceled: true }).then()
 				: Promise.reject(new Error()).then();
 		});
 	return mockProvider;
@@ -623,5 +624,5 @@ interface AccountManagementState {
 	mockAccountStore: TypeMoq.Mock<IAccountStore>;
 	eventVerifierUpdate: EventVerifierSingle<UpdateAccountListEventParams>;
 	eventVerifierProviderAdded: EventVerifierSingle<AccountProviderAddedEventParams>;
-	eventVerifierProviderRemoved: EventVerifierSingle<sqlops.AccountProviderMetadata>;
+	eventVerifierProviderRemoved: EventVerifierSingle<azdata.AccountProviderMetadata>;
 }

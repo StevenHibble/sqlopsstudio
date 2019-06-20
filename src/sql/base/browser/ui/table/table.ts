@@ -4,10 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/table';
+import 'vs/css!./media/slick.grid';
+import 'vs/css!./media/slickColorTheme';
+import 'vs/css!./media/slickGrid';
+
 import { TableDataView } from './tableDataView';
 import { IDisposableDataProvider, ITableSorter, ITableMouseEvent, ITableConfiguration, ITableStyles } from 'sql/base/browser/ui/table/interfaces';
 
-import { IThemable } from 'vs/platform/theme/common/styler';
 import * as DOM from 'vs/base/browser/dom';
 import { mixin } from 'vs/base/common/objects';
 import { IDisposable } from 'vs/base/common/lifecycle';
@@ -16,16 +19,16 @@ import { Widget } from 'vs/base/browser/ui/widget';
 import { isArray, isBoolean } from 'vs/base/common/types';
 import { Event, Emitter } from 'vs/base/common/event';
 import { range } from 'vs/base/common/arrays';
-import { $ } from 'vs/base/browser/builder';
 
 function getDefaultOptions<T>(): Slick.GridOptions<T> {
 	return <Slick.GridOptions<T>>{
 		syncColumnCellResize: true,
-		enableColumnReorder: false
+		enableColumnReorder: false,
+		emulatePagingWhenScrolling: false
 	};
 }
 
-export class Table<T extends Slick.SlickData> extends Widget implements IThemable, IDisposable {
+export class Table<T extends Slick.SlickData> extends Widget implements IDisposable {
 	private styleElement: HTMLStyleElement;
 	private idPrefix: string;
 
@@ -38,13 +41,16 @@ export class Table<T extends Slick.SlickData> extends Widget implements IThemabl
 	private _container: HTMLElement;
 	private _tableContainer: HTMLElement;
 
-	private _classChangeTimeout: number;
+	private _classChangeTimeout: NodeJS.Timer;
 
 	private _onContextMenu = new Emitter<ITableMouseEvent>();
 	public readonly onContextMenu: Event<ITableMouseEvent> = this._onContextMenu.event;
 
 	private _onClick = new Emitter<ITableMouseEvent>();
 	public readonly onClick: Event<ITableMouseEvent> = this._onClick.event;
+
+	private _onColumnResize = new Emitter<void>();
+	public readonly onColumnResize = this._onColumnResize.event;
 
 	constructor(parent: HTMLElement, configuration?: ITableConfiguration<T>, options?: Slick.GridOptions<T>) {
 		super();
@@ -91,7 +97,7 @@ export class Table<T extends Slick.SlickData> extends Widget implements IThemabl
 		if (configuration && configuration.sorter) {
 			this._sorter = configuration.sorter;
 			this._grid.onSort.subscribe((e, args) => {
-				this._sorter.sort(args);
+				this._sorter(args);
 				this._grid.invalidate();
 				this._grid.render();
 			});
@@ -105,6 +111,7 @@ export class Table<T extends Slick.SlickData> extends Widget implements IThemabl
 
 		this.mapMouseEvent(this._grid.onContextMenu, this._onContextMenu);
 		this.mapMouseEvent(this._grid.onClick, this._onClick);
+		this._grid.onColumnsResized.subscribe(() => this._onColumnResize.fire());
 	}
 
 	private mapMouseEvent(slickEvent: Slick.Event<any>, emitter: Emitter<ITableMouseEvent>) {
@@ -117,7 +124,7 @@ export class Table<T extends Slick.SlickData> extends Widget implements IThemabl
 	}
 
 	public dispose() {
-		$(this._container).dispose();
+		this._container.remove();
 		super.dispose();
 	}
 
@@ -142,9 +149,9 @@ export class Table<T extends Slick.SlickData> extends Widget implements IThemabl
 		return this._grid;
 	}
 
-	setData(data: Array<T>);
-	setData(data: TableDataView<T>);
-	setData(data: Array<T> | TableDataView<T>) {
+	setData(data: Array<T>): void;
+	setData(data: TableDataView<T>): void;
+	setData(data: Array<T> | TableDataView<T>): void {
 		if (data instanceof TableDataView) {
 			this._data = data;
 		} else {

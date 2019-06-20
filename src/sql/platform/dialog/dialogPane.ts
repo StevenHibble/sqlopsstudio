@@ -3,25 +3,24 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import 'vs/css!./media/dialogModal';
 
 import { NgModuleRef } from '@angular/core';
 
-import { IModalDialogStyles } from 'sql/base/browser/ui/modal/modal';
+import { IModalDialogStyles } from 'sql/workbench/browser/modal/modal';
 import { DialogTab } from 'sql/platform/dialog/dialogTypes';
 import { TabbedPanel, IPanelTab, IPanelView } from 'sql/base/browser/ui/panel/panel';
-import { bootstrapAngular } from 'sql/services/bootstrap/bootstrapService';
+import { bootstrapAngular } from 'sql/platform/bootstrap/node/bootstrapService';
 import { DialogModule } from 'sql/platform/dialog/dialog.module';
 import { DialogComponentParams, LayoutRequestParams } from 'sql/platform/dialog/dialogContainer.component';
 
 import * as DOM from 'vs/base/browser/dom';
-import { Builder } from 'vs/base/browser/builder';
 import { IThemable } from 'vs/platform/theme/common/styler';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { Emitter } from 'vs/base/common/event';
+import { attachTabbedPanelStyler } from 'sql/platform/theme/common/styler';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
 
 export class DialogPane extends Disposable implements IThemable {
 	private _tabbedPanel: TabbedPanel;
@@ -41,6 +40,7 @@ export class DialogPane extends Disposable implements IThemable {
 		private _content: string | DialogTab[],
 		private _validityChangedCallback: (valid: boolean) => void,
 		private _instantiationService: IInstantiationService,
+		private _themeService: IThemeService,
 		public displayPageTitle: boolean,
 		public description?: string,
 	) {
@@ -48,42 +48,42 @@ export class DialogPane extends Disposable implements IThemable {
 	}
 
 	public createBody(container: HTMLElement): HTMLElement {
-		new Builder(container).div({ class: 'dialogModal-pane' }, (bodyBuilder) => {
-			this._body = bodyBuilder.getHTMLElement();
-			if (typeof this._content === 'string' || this._content.length < 2) {
-				let modelViewId = typeof this._content === 'string' ? this._content : this._content[0].content;
-				this.initializeModelViewContainer(this._body, modelViewId);
-			} else {
-				this._tabbedPanel = new TabbedPanel(this._body);
-				this._content.forEach((tab, tabIndex) => {
-					if (this._selectedTabIndex === tabIndex) {
-						this._selectedTabContent = tab.content;
-					}
-					let tabContainer = document.createElement('div');
-					tabContainer.style.display = 'none';
-					this._body.appendChild(tabContainer);
-					this.initializeModelViewContainer(tabContainer, tab.content, tab);
-					this._tabbedPanel.onTabChange(e => {
-						tabContainer.style.height = (this.getTabDimension().height - this._tabbedPanel.headersize) + 'px';
-						this._onLayoutChange.fire({ modelViewId: tab.content });
-					});
-					this._tabbedPanel.pushTab({
-						title: tab.title,
-						identifier: 'dialogPane.' + this.title + '.' + tabIndex,
-						view: {
-							render: (container) => {
-								if (tabContainer.parentElement === this._body) {
-									this._body.removeChild(tabContainer);
-								}
-								container.appendChild(tabContainer);
-								tabContainer.style.display = 'block';
-							},
-							layout: (dimension) => { this.getTabDimension(); }
-						} as IPanelView
-					} as IPanelTab);
+		this._body = DOM.append(container, DOM.$('div.dialogModal-pane'));
+		if (typeof this._content === 'string' || this._content.length < 2) {
+			let modelViewId = typeof this._content === 'string' ? this._content : this._content[0].content;
+			this.initializeModelViewContainer(this._body, modelViewId);
+		} else {
+			this._tabbedPanel = new TabbedPanel(this._body);
+			attachTabbedPanelStyler(this._tabbedPanel, this._themeService);
+			this._content.forEach((tab, tabIndex) => {
+				if (this._selectedTabIndex === tabIndex) {
+					this._selectedTabContent = tab.content;
+				}
+				let tabContainer = document.createElement('div');
+				tabContainer.style.display = 'none';
+				this._body.appendChild(tabContainer);
+				this.initializeModelViewContainer(tabContainer, tab.content, tab);
+				this._tabbedPanel.onTabChange(e => {
+					tabContainer.style.height = (this.getTabDimension().height - this._tabbedPanel.headersize) + 'px';
+					this._onLayoutChange.fire({ modelViewId: tab.content });
 				});
-			}
-		});
+				this._tabbedPanel.pushTab({
+					title: tab.title,
+					identifier: 'dialogPane.' + this.title + '.' + tabIndex,
+					view: {
+						render: (container) => {
+							if (tabContainer.parentElement === this._body) {
+								this._body.removeChild(tabContainer);
+							}
+							container.appendChild(tabContainer);
+							tabContainer.style.display = 'block';
+						},
+						layout: (dimension) => { this.getTabDimension(); },
+						focus: () => { }
+					}
+				});
+			});
+		}
 
 		return this._body;
 	}

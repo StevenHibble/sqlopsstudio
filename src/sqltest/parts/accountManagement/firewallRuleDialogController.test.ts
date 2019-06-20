@@ -3,25 +3,25 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as TypeMoq from 'typemoq';
 import { Emitter } from 'vs/base/common/event';
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
-import { FirewallRuleDialog } from 'sql/parts/accountManagement/firewallRuleDialog/firewallRuleDialog';
-import { FirewallRuleViewModel } from 'sql/parts/accountManagement/firewallRuleDialog/firewallRuleViewModel';
-import { FirewallRuleDialogController } from 'sql/parts/accountManagement/firewallRuleDialog/firewallRuleDialogController';
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
+import { FirewallRuleDialog } from 'sql/platform/accounts/browser/firewallRuleDialog';
+import { FirewallRuleViewModel } from 'sql/platform/accounts/common/firewallRuleViewModel';
+import { FirewallRuleDialogController } from 'sql/platform/accounts/browser/firewallRuleDialogController';
 import { AccountManagementTestService } from 'sqltest/stubs/accountManagementStubs';
 import { ResourceProviderStub } from 'sqltest/stubs/resourceProviderServiceStub';
 import { ErrorMessageServiceStub } from 'sqltest/stubs/errorMessageServiceStub';
 import { InstantiationService } from 'vs/platform/instantiation/common/instantiationService';
 import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
 import { Deferred } from 'sql/base/common/promise';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 // TESTS ///////////////////////////////////////////////////////////////////
 suite('Firewall rule dialog controller tests', () => {
 	let connectionProfile: IConnectionProfile;
-	let account: sqlops.Account;
+	let account: azdata.Account;
 	let IPAddress = '250.222.155.198';
 	let mockOnAddAccountErrorEvent: Emitter<string>;
 	let mockOnCreateFirewallRule: Emitter<void>;
@@ -36,7 +36,8 @@ suite('Firewall rule dialog controller tests', () => {
 			displayInfo: {
 				contextualDisplayName: 'Microsoft Account',
 				accountType: 'microsoft',
-				displayName: 'Account 1'
+				displayName: 'Account 1',
+				userId: 'user@email.com'
 			},
 			properties: [],
 			isStale: false
@@ -59,7 +60,7 @@ suite('Firewall rule dialog controller tests', () => {
 			.returns(() => mockFirewallRuleViewModel.object);
 
 		// Create a mock account picker
-		let firewallRuleDialog = new FirewallRuleDialog(null, null, null, instantiationService.object, null, null, new ContextKeyServiceStub(), null, null);
+		let firewallRuleDialog = new FirewallRuleDialog(null, null, null, instantiationService.object, null, null, new ContextKeyServiceStub(), null, null, undefined);
 		mockFirewallRuleDialog = TypeMoq.Mock.ofInstance(firewallRuleDialog);
 
 		let mockEvent = new Emitter<any>();
@@ -88,7 +89,7 @@ suite('Firewall rule dialog controller tests', () => {
 			groupId: 'group id',
 			getOptionsKey: undefined,
 			matches: undefined,
-			providerName: 'MSSQL',
+			providerName: mssqlProviderName,
 			options: {},
 			saveProfile: true,
 			id: undefined
@@ -136,7 +137,7 @@ suite('Firewall rule dialog controller tests', () => {
 
 		// Then: it should get security token from account management service and call create firewall rule in resource provider
 		deferredPromise.promise.then(() => {
-			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny()), TypeMoq.Times.once());
+			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockResourceProvider.verify(x => x.createFirewallRule(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockFirewallRuleDialog.verify(x => x.close(), TypeMoq.Times.once());
 			mockFirewallRuleDialog.verify(x => x.onServiceComplete(), TypeMoq.Times.once());
@@ -165,7 +166,7 @@ suite('Firewall rule dialog controller tests', () => {
 
 		// Then: it should get security token from account management service and an error dialog should have been opened
 		deferredPromise.promise.then(() => {
-			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny()), TypeMoq.Times.once());
+			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockErrorMessageService.verify(x => x.showDialog(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockResourceProvider.verify(x => x.createFirewallRule(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.never());
 			done();
@@ -193,7 +194,7 @@ suite('Firewall rule dialog controller tests', () => {
 
 		// Then: it should get security token from account management service and an error dialog should have been opened
 		deferredPromise.promise.then(() => {
-			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny()), TypeMoq.Times.once());
+			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockResourceProvider.verify(x => x.createFirewallRule(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockErrorMessageService.verify(x => x.showDialog(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			done();
@@ -221,7 +222,7 @@ suite('Firewall rule dialog controller tests', () => {
 
 		// Then: it should get security token from account management service and an error dialog should have been opened
 		deferredPromise.promise.then(() => {
-			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny()), TypeMoq.Times.once());
+			mockAccountManagementService.verify(x => x.getSecurityToken(TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockResourceProvider.verify(x => x.createFirewallRule(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			mockErrorMessageService.verify(x => x.showDialog(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
 			done();
@@ -232,12 +233,12 @@ suite('Firewall rule dialog controller tests', () => {
 function getMockAccountManagementService(resolveSecurityToken: boolean): TypeMoq.Mock<AccountManagementTestService> {
 	let accountManagementTestService = new AccountManagementTestService();
 	let mockAccountManagementService = TypeMoq.Mock.ofInstance(accountManagementTestService);
-	mockAccountManagementService.setup(x => x.getSecurityToken(TypeMoq.It.isAny()))
+	mockAccountManagementService.setup(x => x.getSecurityToken(TypeMoq.It.isAny(), TypeMoq.It.isAny()))
 		.returns(() => resolveSecurityToken ? Promise.resolve({}) : Promise.reject(null).then());
 	return mockAccountManagementService;
 }
 
-function getMockResourceProvider(resolveCreateFirewallRule: boolean, response?: sqlops.CreateFirewallRuleResponse): TypeMoq.Mock<ResourceProviderStub> {
+function getMockResourceProvider(resolveCreateFirewallRule: boolean, response?: azdata.CreateFirewallRuleResponse): TypeMoq.Mock<ResourceProviderStub> {
 	let resourceProviderStub = new ResourceProviderStub();
 	let mockResourceProvider = TypeMoq.Mock.ofInstance(resourceProviderStub);
 	mockResourceProvider.setup(x => x.createFirewallRule(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()))

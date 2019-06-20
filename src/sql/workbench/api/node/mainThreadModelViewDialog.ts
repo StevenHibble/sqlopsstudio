@@ -2,23 +2,21 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IEditorOptions } from 'vs/platform/editor/common/editor';
-import { IEditor } from 'vs/workbench/common/editor';
-import { extHostNamedCustomer } from 'vs/workbench/api/electron-browser/extHostCustomers';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
+import { extHostNamedCustomer } from 'vs/workbench/api/common/extHostCustomers';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
 import { MainThreadModelViewDialogShape, SqlMainContext, ExtHostModelViewDialogShape, SqlExtHostContext } from 'sql/workbench/api/node/sqlExtHost.protocol';
 import { Dialog, DialogTab, DialogButton, WizardPage, Wizard } from 'sql/platform/dialog/dialogTypes';
 import { CustomDialogService } from 'sql/platform/dialog/customDialogService';
 import { IModelViewDialogDetails, IModelViewTabDetails, IModelViewButtonDetails, IModelViewWizardPageDetails, IModelViewWizardDetails } from 'sql/workbench/api/common/sqlExtHostTypes';
-import { ModelViewInput, ModelViewInputModel, ModeViewSaveHandler } from 'sql/parts/modelComponents/modelEditor/modelViewInput';
+import { ModelViewInput, ModelViewInputModel, ModeViewSaveHandler } from 'sql/workbench/electron-browser/modelComponents/modelViewInput';
 
 import * as vscode from 'vscode';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
+import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 
 @extHostNamedCustomer(SqlMainContext.MainThreadModelViewDialog)
 export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape {
@@ -35,7 +33,8 @@ export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape
 	constructor(
 		context: IExtHostContext,
 		@IInstantiationService private _instatiationService: IInstantiationService,
-		@IEditorService private _editorService: IEditorService
+		@IEditorService private _editorService: IEditorService,
+		@ITelemetryService private _telemetryService: ITelemetryService
 	) {
 		this._proxy = context.getProxy(SqlExtHostContext.ExtHostModelViewDialog);
 		this._dialogService = new CustomDialogService(_instatiationService);
@@ -45,7 +44,7 @@ export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape
 		throw new Error('Method not implemented.');
 	}
 
-	public $openEditor(handle: number, modelViewId: string, title: string, options?: sqlops.ModelViewEditorOptions, position?: vscode.ViewColumn): Thenable<void> {
+	public $openEditor(handle: number, modelViewId: string, title: string, options?: azdata.ModelViewEditorOptions, position?: vscode.ViewColumn): Thenable<void> {
 		return new Promise<void>((resolve, reject) => {
 			let saveHandler: ModeViewSaveHandler = options && options.supportsSave ? (h) => this.handleSave(h) : undefined;
 			let model = new ModelViewInputModel(modelViewId, handle, saveHandler);
@@ -68,9 +67,9 @@ export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape
 		return this._proxy.$handleSave(handle);
 	}
 
-	public $openDialog(handle: number): Thenable<void> {
+	public $openDialog(handle: number, dialogName?: string): Thenable<void> {
 		let dialog = this.getDialog(handle);
-		this._dialogService.showDialog(dialog);
+		this._dialogService.showDialog(dialog, dialogName, { hasBackButton: false, isWide: dialog.isWide, hasErrors: true });
 		return Promise.resolve();
 	}
 
@@ -94,6 +93,7 @@ export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape
 		}
 
 		dialog.title = details.title;
+		dialog.isWide = details.isWide;
 		if (details.content && typeof details.content !== 'string') {
 			dialog.content = details.content.map(tabHandle => this.getTab(tabHandle));
 		} else {
@@ -286,7 +286,7 @@ export class MainThreadModelViewDialog implements MainThreadModelViewDialogShape
 		this._proxy.$updateWizardPageInfo(handle, wizard.pages.map(page => this._wizardPageHandles.get(page)), wizard.currentPage);
 	}
 
-	private validateNavigation(handle: number, info: sqlops.window.modelviewdialog.WizardPageChangeInfo): Thenable<boolean> {
+	private validateNavigation(handle: number, info: azdata.window.WizardPageChangeInfo): Thenable<boolean> {
 		return this._proxy.$validateNavigation(handle, info);
 	}
 

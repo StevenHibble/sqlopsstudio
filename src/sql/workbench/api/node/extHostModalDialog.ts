@@ -2,15 +2,14 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { SqlMainContext, MainThreadModalDialogShape, ExtHostModalDialogsShape } from 'sql/workbench/api/node/sqlExtHost.protocol';
-import { IMainContext } from 'vs/workbench/api/node/extHost.protocol';
+import { IMainContext } from 'vs/workbench/api/common/extHost.protocol';
 import * as vscode from 'vscode';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import { Emitter } from 'vs/base/common/event';
 
-class ExtHostDialog implements sqlops.ModalDialog {
+class ExtHostDialog implements azdata.ModalDialog {
 	private _title: string;
 	private _html: string;
 	private _okTitle: string;
@@ -97,8 +96,7 @@ export class ExtHostModalDialogs implements ExtHostModalDialogsShape {
 
 	createDialog(
 		title: string
-	): sqlops.ModalDialog {
-		console.log(title);
+	): azdata.ModalDialog {
 		const handle = ExtHostModalDialogs._handlePool++;
 		this._proxy.$createDialog(handle);
 
@@ -117,6 +115,6 @@ export class ExtHostModalDialogs implements ExtHostModalDialogsShape {
 
 	$onClosed(handle: number): void {
 		const webview = this._webviews.get(handle);
-		webview.onClosedEmitter.fire();
+		webview.onClosedEmitter.fire(undefined);
 	}
 }

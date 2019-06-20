@@ -3,12 +3,10 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import { IClipboardService } from 'sql/platform/clipboard/common/clipboardService';
 import { IClipboardService as vsIClipboardService } from 'vs/platform/clipboard/common/clipboardService';
 import { clipboard, nativeImage } from 'electron';
-import URI from 'vs/base/common/uri';
+import { URI } from 'vs/base/common/uri';
 
 export class ClipboardService implements IClipboardService {
 	_serviceBrand: any;

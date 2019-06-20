@@ -2,7 +2,6 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import * as Types from 'vs/base/common/types';
 import * as Assert from 'vs/base/common/assert';
@@ -55,4 +54,4 @@ class RegistryImpl implements IRegistry {
 	}
 }
 
-export const Registry = <IRegistry>new RegistryImpl();
+export const Registry: IRegistry = new RegistryImpl();

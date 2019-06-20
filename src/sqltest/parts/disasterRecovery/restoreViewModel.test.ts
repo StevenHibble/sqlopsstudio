@@ -3,10 +3,9 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as assert from 'assert';
-import { RestoreViewModel } from 'sql/parts/disasterRecovery/restore/restoreViewModel';
+import { RestoreViewModel } from 'sql/workbench/parts/restore/browser/restoreViewModel';
 import { ServiceOptionType } from 'sql/workbench/api/common/sqlExtHostTypes';
 
 suite('Restore Dialog view model tests', () => {
@@ -14,14 +13,14 @@ suite('Restore Dialog view model tests', () => {
 	let option2Category = 'option2';
 	let option3Boolean = 'option3';
 	let options: { [name: string]: any };
-	let stringServiceOption: sqlops.ServiceOption;
-	let categoryServiceOption: sqlops.ServiceOption;
-	let booleanServiceOption: sqlops.ServiceOption;
+	let stringServiceOption: azdata.ServiceOption;
+	let categoryServiceOption: azdata.ServiceOption;
+	let booleanServiceOption: azdata.ServiceOption;
 
 	let viewModel: RestoreViewModel;
 
-	let planDetails: { [key: string]: sqlops.RestorePlanDetailInfo };
-	let backupSets: sqlops.DatabaseFileInfo[];
+	let planDetails: { [key: string]: azdata.RestorePlanDetailInfo };
+	let backupSets: azdata.DatabaseFileInfo[];
 
 	setup(() => {
 		options = {};
@@ -168,7 +167,7 @@ suite('Restore Dialog view model tests', () => {
 	});
 
 	test('on restore plan response should update all options from restore plan response correctly', () => {
-		let restorePlanResponse: sqlops.RestorePlanResponse = {
+		let restorePlanResponse: azdata.RestorePlanResponse = {
 			sessionId: '123',
 			backupSetsToRestore: backupSets,
 			canRestore: true,
@@ -198,7 +197,7 @@ suite('Restore Dialog view model tests', () => {
 
 
 	test('on reset restore options should reset all options', () => {
-		let restorePlanResponse: sqlops.RestorePlanResponse = {
+		let restorePlanResponse: azdata.RestorePlanResponse = {
 			sessionId: '123',
 			backupSetsToRestore: backupSets,
 			canRestore: true,

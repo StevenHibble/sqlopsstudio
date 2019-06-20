@@ -3,11 +3,8 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
 import * as vscode from 'vscode';
-import * as opener from 'opener';
 import TelemetryReporter from 'vscode-extension-telemetry';
-import { PlatformInformation } from 'service-downloader/out/platform';
 import { ErrorAction, ErrorHandler, Message, CloseAction } from 'vscode-languageclient';
 
 import * as Utils from './utils';
@@ -36,26 +33,12 @@ export function FilterErrorPath(line: string): string {
 			return values[1];
 		}
 	}
+	return undefined;
 }
 
 export class Telemetry {
 	private static reporter: TelemetryReporter;
-	private static userId: string;
-	private static platformInformation: PlatformInformation;
 	private static disabled: boolean;
-
-	public static getPlatformInformation(): Promise<PlatformInformation> {
-		if (this.platformInformation) {
-			return Promise.resolve(this.platformInformation);
-		} else {
-			return new Promise<PlatformInformation>(resolve => {
-				PlatformInformation.getCurrent().then(info => {
-					this.platformInformation = info;
-					resolve(this.platformInformation);
-				});
-			});
-		}
-	}
 
 	/**
 	 * Disable telemetry reporting
@@ -85,24 +68,18 @@ export class Telemetry {
 	 */
 	public static sendTelemetryEventForException(
 		err: any, methodName: string, extensionConfigName: string): void {
-		try {
-			let stackArray: string[];
-			let firstLine: string = '';
-			if (err !== undefined && err.stack !== undefined) {
-				stackArray = err.stack.split('\n');
-				if (stackArray !== undefined && stackArray.length >= 2) {
-					firstLine = stackArray[1]; // The fist line is the error message and we don't want to send that telemetry event
-					firstLine = FilterErrorPath(firstLine);
-				}
+		let stackArray: string[];
+		let firstLine: string = '';
+		if (err !== undefined && err.stack !== undefined) {
+			stackArray = err.stack.split('\n');
+			if (stackArray !== undefined && stackArray.length >= 2) {
+				firstLine = stackArray[1]; // The fist line is the error message and we don't want to send that telemetry event
+				firstLine = FilterErrorPath(firstLine);
 			}
-
-			// Only adding the method name and the fist line of the stack trace. We don't add the error message because it might have PII
-			this.sendTelemetryEvent('Exception', { methodName: methodName, errorLine: firstLine });
-			// Utils.logDebug('Unhandled Exception occurred. error: ' + err + ' method: ' + methodName, extensionConfigName);
-		} catch (telemetryErr) {
-			// If sending telemetry event fails ignore it so it won't break the extension
-			// Utils.logDebug('Failed to send telemetry event. error: ' + telemetryErr, extensionConfigName);
 		}
+
+		// Only adding the method name and the fist line of the stack trace. We don't add the error message because it might have PII
+		this.sendTelemetryEvent('Exception', { methodName: methodName, errorLine: firstLine });
 	}
 
 	/**
@@ -126,19 +103,18 @@ export class Telemetry {
 			properties = {};
 		}
 
-		// Augment the properties structure with additional common properties before sending
-		Promise.all([this.getPlatformInformation()]).then(() => {
-			properties['distribution'] = (this.platformInformation && this.platformInformation.distribution) ?
-				`${this.platformInformation.distribution.name}, ${this.platformInformation.distribution.version}` : '';
-
+		try {
 			this.reporter.sendTelemetryEvent(eventName, properties, measures);
-		});
+		} catch (telemetryErr) {
+			// If sending telemetry event fails ignore it so it won't break the extension
+			console.error('Failed to send telemetry event. error: ' + telemetryErr);
+		}
+
 	}
 }
 
 /**
  * Handle Language Service client errors
- * @class LanguageClientErrorHandler
  */
 export class LanguageClientErrorHandler implements ErrorHandler {
 
@@ -152,18 +128,13 @@ export class LanguageClientErrorHandler implements ErrorHandler {
 			Constants.serviceCrashMessage,
 			Constants.serviceCrashButton).then(action => {
 				if (action && action === Constants.serviceCrashButton) {
-					opener(Constants.serviceCrashLink);
+					vscode.env.openExternal(vscode.Uri.parse(Constants.serviceCrashLink));
 				}
 			});
 	}
 
 	/**
 	 * Callback for language service client error
-	 *
-	 * @param {Error} error
-	 * @param {Message} message
-	 * @param {number} count
-	 * @returns {ErrorAction}
 	 *
 	 * @memberOf LanguageClientErrorHandler
 	 */
@@ -177,8 +148,6 @@ export class LanguageClientErrorHandler implements ErrorHandler {
 
 	/**
 	 * Callback for language service client closed
-	 *
-	 * @returns {CloseAction}
 	 *
 	 * @memberOf LanguageClientErrorHandler
 	 */

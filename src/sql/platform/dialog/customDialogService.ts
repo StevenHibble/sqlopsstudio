@@ -3,14 +3,10 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
-import * as sqlops from 'sqlops';
-import { OptionsDialog } from 'sql/base/browser/ui/modal/optionsDialog';
 import { DialogModal } from 'sql/platform/dialog/dialogModal';
 import { WizardModal } from 'sql/platform/dialog/wizardModal';
-import { Dialog, Wizard, DialogTab } from 'sql/platform/dialog/dialogTypes';
-import { IModalOptions } from 'sql/base/browser/ui/modal/modal';
+import { Dialog, Wizard } from 'sql/platform/dialog/dialogTypes';
+import { IModalOptions } from 'sql/workbench/browser/modal/modal';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
 const defaultOptions: IModalOptions = { hasBackButton: false, isWide: false, hasErrors: true };
@@ -20,10 +16,11 @@ export class CustomDialogService {
 	private _dialogModals = new Map<Dialog, DialogModal>();
 	private _wizardModals = new Map<Wizard, WizardModal>();
 
-	constructor( @IInstantiationService private _instantiationService: IInstantiationService) { }
+	constructor(@IInstantiationService private _instantiationService: IInstantiationService) { }
 
-	public showDialog(dialog: Dialog, options?: IModalOptions): void {
-		let dialogModal = this._instantiationService.createInstance(DialogModal, dialog, 'CustomDialog', options || defaultOptions);
+	public showDialog(dialog: Dialog, dialogName?: string, options?: IModalOptions): void {
+		let name = dialogName ? dialogName : 'CustomDialog';
+		let dialogModal = this._instantiationService.createInstance(DialogModal, dialog, name, options || defaultOptions);
 		this._dialogModals.set(dialog, dialogModal);
 		dialogModal.render();
 		dialogModal.open();

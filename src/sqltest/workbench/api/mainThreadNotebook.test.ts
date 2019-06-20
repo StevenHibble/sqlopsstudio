@@ -2,22 +2,23 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import * as assert from 'assert';
 import * as TypeMoq from 'typemoq';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 import * as vscode from 'vscode';
 
-import URI, { UriComponents } from 'vs/base/common/uri';
-import { IExtHostContext } from 'vs/workbench/api/node/extHost.protocol';
+import { URI, UriComponents } from 'vs/base/common/uri';
+import { IExtHostContext } from 'vs/workbench/api/common/extHost.protocol';
 
 import { ExtHostNotebookShape } from 'sql/workbench/api/node/sqlExtHost.protocol';
 import { MainThreadNotebook } from 'sql/workbench/api/node/mainThreadNotebook';
-import { NotebookService } from 'sql/services/notebook/notebookServiceImpl';
-import { INotebookProvider } from 'sql/services/notebook/notebookService';
+import { NotebookService } from 'sql/workbench/services/notebook/common/notebookServiceImpl';
+import { INotebookProvider } from 'sql/workbench/services/notebook/common/notebookService';
 import { INotebookManagerDetails, INotebookSessionDetails, INotebookKernelDetails, INotebookFutureDetails } from 'sql/workbench/api/common/sqlExtHostTypes';
-import { LocalContentManager } from 'sql/services/notebook/localContentManager';
+import { LocalContentManager } from 'sql/workbench/services/notebook/node/localContentManager';
+import { ContextKeyServiceStub } from 'sqltest/stubs/contextKeyServiceStub';
+import { TestLifecycleService } from 'vs/workbench/test/workbenchTestServices';
 
 suite('MainThreadNotebook Tests', () => {
 
@@ -26,12 +27,13 @@ suite('MainThreadNotebook Tests', () => {
 	let notebookUri: URI;
 	let mockNotebookService: TypeMoq.Mock<NotebookService>;
 	let providerId = 'TestProvider';
+
 	setup(() => {
 		mockProxy = TypeMoq.Mock.ofType(ExtHostNotebookStub);
 		let extContext = <IExtHostContext>{
 			getProxy: proxyType => mockProxy.object
 		};
-		mockNotebookService = TypeMoq.Mock.ofType(NotebookService);
+		mockNotebookService = TypeMoq.Mock.ofType(NotebookService, undefined, new TestLifecycleService(), undefined, undefined, undefined, undefined, new ContextKeyServiceStub());
 		notebookUri = URI.parse('file:/user/default/my.ipynb');
 		mainThreadNotebook = new MainThreadNotebook(extContext, mockNotebookService.object);
 	});
@@ -91,7 +93,7 @@ suite('MainThreadNotebook Tests', () => {
 				hasServerManager: false
 			};
 			mockProxy.setup(p => p.$getNotebookManager(TypeMoq.It.isAnyNumber(), TypeMoq.It.isValue(notebookUri)))
-			.returns(() => Promise.resolve(details));
+				.returns(() => Promise.resolve(details));
 
 			// When I get the notebook manager
 			let manager = await provider.getNotebookManager(notebookUri);
@@ -105,7 +107,7 @@ suite('MainThreadNotebook Tests', () => {
 		test('should return manager with a content & server manager if extension host has these', async () => {
 			// Given the extension provider doesn't have acontent or server manager
 			mockProxy.setup(p => p.$getNotebookManager(TypeMoq.It.isAnyNumber(), TypeMoq.It.isValue(notebookUri)))
-			.returns(() => Promise.resolve(managerWithAllFeatures));
+				.returns(() => Promise.resolve(managerWithAllFeatures));
 
 			// When I get the notebook manager
 			let manager = await provider.getNotebookManager(notebookUri);
@@ -131,40 +133,46 @@ class ExtHostNotebookStub implements ExtHostNotebookShape {
 	$doStopServer(managerHandle: number): Thenable<void> {
 		throw new Error('Method not implemented.');
 	}
-	$getNotebookContents(managerHandle: number, notebookUri: UriComponents): Thenable<sqlops.nb.INotebook> {
+	$getNotebookContents(managerHandle: number, notebookUri: UriComponents): Thenable<azdata.nb.INotebookContents> {
 		throw new Error('Method not implemented.');
 	}
-	$save(managerHandle: number, notebookUri: UriComponents, notebook: sqlops.nb.INotebook): Thenable<sqlops.nb.INotebook> {
+	$save(managerHandle: number, notebookUri: UriComponents, notebook: azdata.nb.INotebookContents): Thenable<azdata.nb.INotebookContents> {
 		throw new Error('Method not implemented.');
 	}
-	$refreshSpecs(managerHandle: number): Thenable<sqlops.nb.IAllKernels> {
+	$refreshSpecs(managerHandle: number): Thenable<azdata.nb.IAllKernels> {
 		throw new Error('Method not implemented.');
 	}
-	$startNewSession(managerHandle: number, options: sqlops.nb.ISessionOptions): Thenable<INotebookSessionDetails> {
+	$startNewSession(managerHandle: number, options: azdata.nb.ISessionOptions): Thenable<INotebookSessionDetails> {
 		throw new Error('Method not implemented.');
 	}
 	$shutdownSession(managerHandle: number, sessionId: string): Thenable<void> {
 		throw new Error('Method not implemented.');
 	}
-	$changeKernel(sessionId: number, kernelInfo: sqlops.nb.IKernelSpec): Thenable<INotebookKernelDetails> {
+	$changeKernel(sessionId: number, kernelInfo: azdata.nb.IKernelSpec): Thenable<INotebookKernelDetails> {
 		throw new Error('Method not implemented.');
 	}
-	$getKernelReadyStatus(kernelId: number): Thenable<sqlops.nb.IInfoReply> {
+	$configureKernel(sessionId: number, kernelInfo: azdata.nb.IKernelSpec): Thenable<void> {
 		throw new Error('Method not implemented.');
 	}
-	$getKernelSpec(kernelId: number): Thenable<sqlops.nb.IKernelSpec> {
+	$configureConnection(sessionId: number, conneection: azdata.IConnectionProfile): Thenable<void> {
 		throw new Error('Method not implemented.');
 	}
-	$requestComplete(kernelId: number, content: sqlops.nb.ICompleteRequest): Thenable<sqlops.nb.ICompleteReplyMsg> {
+	$getKernelReadyStatus(kernelId: number): Thenable<azdata.nb.IInfoReply> {
 		throw new Error('Method not implemented.');
 	}
-	$requestExecute(kernelId: number, content: sqlops.nb.IExecuteRequest, disposeOnDone?: boolean): Thenable<INotebookFutureDetails> {
+	$getKernelSpec(kernelId: number): Thenable<azdata.nb.IKernelSpec> {
+		throw new Error('Method not implemented.');
+	}
+	$requestComplete(kernelId: number, content: azdata.nb.ICompleteRequest): Thenable<azdata.nb.ICompleteReplyMsg> {
+		throw new Error('Method not implemented.');
+	}
+	$requestExecute(kernelId: number, content: azdata.nb.IExecuteRequest, disposeOnDone?: boolean): Thenable<INotebookFutureDetails> {
 		throw new Error('Method not implemented.');
 	}
 	$interruptKernel(kernelId: number): Thenable<void> {
 		throw new Error('Method not implemented.');
 	}
-	$sendInputReply(futureId: number, content: sqlops.nb.IInputReply): void {
+	$sendInputReply(futureId: number, content: azdata.nb.IInputReply): void {
 		throw new Error('Method not implemented.');
 	}
 	$disposeFuture(futureId: number): void {

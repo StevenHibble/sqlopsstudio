@@ -2,15 +2,13 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { SqlOpsDataClient, ClientOptions, SqlOpsFeature } from 'dataprotocol-client';
-import * as path from 'path';
 import { IConfig, ServerProvider } from 'service-downloader';
 import { ServerOptions, RPCMessageType, ClientCapabilities, ServerCapabilities, TransportKind } from 'vscode-languageclient';
 import { Disposable } from 'vscode';
 import * as UUID from 'vscode-languageclient/lib/utils/uuid';
-import * as sqlops from 'sqlops';
+import * as azdata from 'azdata';
 
 import * as Contracts from './contracts';
 import * as Constants from './constants';
@@ -42,7 +40,7 @@ class CredentialsFeature extends SqlOpsFeature<any> {
 	protected registerProvider(options: any): Disposable {
 		const client = this._client;
 
-		let readCredential = (credentialId: string): Thenable<sqlops.Credential> => {
+		let readCredential = (credentialId: string): Thenable<azdata.Credential> => {
 			return client.sendRequest(Contracts.ReadCredentialRequest.type, { credentialId });
 		};
 
@@ -54,7 +52,7 @@ class CredentialsFeature extends SqlOpsFeature<any> {
 			return client.sendRequest(Contracts.DeleteCredentialRequest.type, { credentialId });
 		};
 
-		return sqlops.credentials.registerProvider({
+		return azdata.credentials.registerProvider({
 			deleteCredential,
 			readCredential,
 			saveCredential,

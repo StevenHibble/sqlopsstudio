@@ -3,15 +3,16 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
-import * as sqlops from 'sqlops';
-import { ConnectionStatusManager } from 'sql/parts/connection/common/connectionStatusManager';
-import * as Utils from 'sql/parts/connection/common/utils';
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
+import * as azdata from 'azdata';
+import { ConnectionStatusManager } from 'sql/platform/connection/common/connectionStatusManager';
+import * as Utils from 'sql/platform/connection/common/utils';
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
 import { CapabilitiesTestService } from 'sqltest/stubs/capabilitiesTestService';
-import { ConnectionProfile } from 'sql/parts/connection/common/connectionProfile';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
+import { TestEnvironmentService, TestLogService } from 'vs/workbench/test/workbenchTestServices';
+import { TestNotificationService } from 'vs/platform/notification/test/common/testNotificationService';
+import { mssqlProviderName } from 'sql/platform/connection/common/constants';
 
 let connections: ConnectionStatusManager;
 let capabilitiesService: CapabilitiesTestService;
@@ -28,7 +29,7 @@ let connectionProfile: IConnectionProfile = {
 	groupId: 'group id',
 	getOptionsKey: () => 'connection1',
 	matches: undefined,
-	providerName: 'MSSQL',
+	providerName: mssqlProviderName,
 	options: {},
 	saveProfile: true,
 	id: undefined
@@ -45,7 +46,7 @@ let editorConnectionProfile: IConnectionProfile = {
 	groupId: 'group id',
 	getOptionsKey: () => 'connection2',
 	matches: undefined,
-	providerName: 'MSSQL',
+	providerName: mssqlProviderName,
 	options: {},
 	saveProfile: true,
 	id: undefined
@@ -62,7 +63,7 @@ let connectionProfileWithoutDbName: IConnectionProfile = {
 	groupId: 'group id',
 	getOptionsKey: () => 'connection1',
 	matches: undefined,
-	providerName: 'MSSQL',
+	providerName: mssqlProviderName,
 	options: {},
 	saveProfile: true,
 	id: undefined
@@ -76,7 +77,7 @@ suite('SQL ConnectionStatusManager tests', () => {
 	setup(() => {
 		capabilitiesService = new CapabilitiesTestService();
 		connectionProfileObject = new ConnectionProfile(capabilitiesService, connectionProfile);
-		connections = new ConnectionStatusManager(capabilitiesService);
+		connections = new ConnectionStatusManager(capabilitiesService, new TestLogService(), TestEnvironmentService, new TestNotificationService());
 		connection1Id = Utils.generateUri(connectionProfile);
 		connection2Id = 'connection2Id';
 		connection3Id = 'connection3Id';
@@ -129,7 +130,7 @@ suite('SQL ConnectionStatusManager tests', () => {
 
 	test('addConnection should set connecting to true', () => {
 		let expected = true;
-		let summary: sqlops.ConnectionInfoSummary = {
+		let summary: azdata.ConnectionInfoSummary = {
 			ownerUri: connection1Id,
 			connectionId: connection1Id,
 			messages: undefined,
@@ -145,7 +146,7 @@ suite('SQL ConnectionStatusManager tests', () => {
 
 	test('onConnectionComplete should set connecting to false', () => {
 		let expected = false;
-		let summary: sqlops.ConnectionInfoSummary = {
+		let summary: azdata.ConnectionInfoSummary = {
 			ownerUri: connection1Id,
 			connectionId: connection1Id,
 			messages: undefined,
@@ -179,7 +180,7 @@ suite('SQL ConnectionStatusManager tests', () => {
 
 	test('updateDatabaseName should update the database name in connection', () => {
 		let dbName: string = 'db name';
-		let summary: sqlops.ConnectionInfoSummary = {
+		let summary: azdata.ConnectionInfoSummary = {
 			connectionSummary: {
 				databaseName: dbName,
 				serverName: undefined,
@@ -205,7 +206,7 @@ suite('SQL ConnectionStatusManager tests', () => {
 
 	test('getOriginalOwnerUri should return the original uri given uri with db name', () => {
 		let dbName: string = 'db name';
-		let summary: sqlops.ConnectionInfoSummary = {
+		let summary: azdata.ConnectionInfoSummary = {
 			connectionSummary: {
 				databaseName: dbName,
 				serverName: undefined,

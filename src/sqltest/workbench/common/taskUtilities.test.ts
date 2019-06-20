@@ -3,19 +3,17 @@
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-'use strict';
-
 import * as assert from 'assert';
 import * as TypeMoq from 'typemoq';
 import * as TaskUtilities from 'sql/workbench/common/taskUtilities';
-import { IObjectExplorerService } from 'sql/parts/objectExplorer/common/objectExplorerService';
+import { IObjectExplorerService } from 'sql/workbench/services/objectExplorer/common/objectExplorerService';
 import { TestConnectionManagementService } from 'sqltest/stubs/connectionManagementService.test';
-import { IConnectionProfile } from 'sql/parts/connection/common/interfaces';
-import { ConnectionProfile } from 'sql/parts/connection/common/connectionProfile';
+import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
 import { WorkbenchEditorTestService } from 'sqltest/stubs/workbenchEditorTestService';
-import URI from 'vs/base/common/uri';
+import { URI } from 'vs/base/common/uri';
 import { UntitledEditorInput } from 'vs/workbench/common/editor/untitledEditorInput';
-import { QueryInput } from 'sql/parts/query/common/queryInput';
+import { QueryInput } from 'sql/workbench/parts/query/common/queryInput';
 
 suite('TaskUtilities', function () {
 	test('getCurrentGlobalConnection returns the selected OE server if a server or one of its children is selected', () => {
@@ -76,9 +74,9 @@ suite('TaskUtilities', function () {
 		mockConnectionManagementService.setup(x => x.isProfileConnected(TypeMoq.It.is(profile => profile === oeProfile || profile === tabProfile))).returns(() => true);
 
 		// Mock the workbench service to return the active tab connection
-		let tabConnectionUri = 'test_uri';
-		let editorInput = new UntitledEditorInput(URI.parse(tabConnectionUri), false, undefined, undefined, undefined, undefined, undefined, undefined, undefined);
-		let queryInput = new QueryInput(undefined, editorInput, undefined, undefined, undefined, undefined, undefined, undefined);
+		let tabConnectionUri = 'file://test_uri';
+		let editorInput = new UntitledEditorInput(URI.parse(tabConnectionUri), false, undefined, undefined, undefined, undefined, undefined, undefined);
+		let queryInput = new QueryInput(undefined, editorInput, undefined, undefined, undefined, undefined, undefined);
 		mockConnectionManagementService.setup(x => x.getConnectionProfile(tabConnectionUri)).returns(() => tabProfile);
 
 		// If I call getCurrentGlobalConnection, it should return the expected profile from the active tab

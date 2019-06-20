@@ -2,12 +2,28 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
-import { IStorageService, StorageScope } from 'vs/platform/storage/common/storage';
+import { IStorageService, StorageScope, IWorkspaceStorageChangeEvent, IWillSaveStateEvent } from 'vs/platform/storage/common/storage';
+import { Event } from 'vs/base/common/event';
 
 export class StorageTestService implements IStorageService {
 	_serviceBrand: any;
+
+	/**
+	 * Emitted whenever data is updated or deleted.
+	 */
+	readonly onDidChangeStorage: Event<IWorkspaceStorageChangeEvent>;
+
+	/**
+	 * Emitted when the storage is about to persist. This is the right time
+	 * to persist data to ensure it is stored before the application shuts
+	 * down.
+	 *
+	 * The will save state event allows to optionally ask for the reason of
+	 * saving the state, e.g. to find out if the state is saved due to a
+	 * shutdown.
+	 */
+	readonly onWillSaveState: Event<IWillSaveStateEvent>;
 
 	/**
 	 * Store a string value under the given key to local storage.
@@ -45,6 +61,12 @@ export class StorageTestService implements IStorageService {
 	 * The optional scope argument allows to define the scope of the operation.
 	 */
 	get(key: string, scope?: StorageScope, defaultValue?: string): string {
+		return undefined;
+	}
+
+	getNumber(key: string, scope: StorageScope, fallbackValue: number): number;
+	getNumber(key: string, scope: StorageScope, fallbackValue?: number): number;
+	getNumber(key: any, scope: any, fallbackValue?: any): number {
 		return undefined;
 	}
 

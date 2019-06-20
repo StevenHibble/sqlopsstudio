@@ -1,22 +1,19 @@
-
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
-'use strict';
 
 import * as assert from 'assert';
 
-export async function assertThrowsAsync(fn, regExp?: any): Promise<void> {
-    let f = () => {
-        // Empty
-    };
-    try {
-      await fn();
-    } catch (e) {
-      f = () => { throw e; };
-    } finally {
-      assert.throws(f, regExp);
-    }
+export async function assertThrowsAsync(fn, expectedMessage?: string): Promise<void> {
+	let threw = false;
+	try {
+		await fn();
+	} catch (e) {
+		threw = true;
+		if (expectedMessage) {
+			assert.strictEqual(e.message, expectedMessage);
+		}
+	}
+	assert.equal(threw, true, 'Expected function to throw but it did not');
 }

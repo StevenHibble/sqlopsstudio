@@ -2,10 +2,9 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the Source EULA. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-'use strict';
 
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { IStorageService } from 'vs/platform/storage/common/storage';
+import { IStorageService, StorageScope } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { INotificationService, Severity } from 'vs/platform/notification/common/notification';
@@ -28,7 +27,7 @@ export class EnablePreviewFeatures implements IWorkbenchContribution {
 		@IConfigurationService configurationService: IConfigurationService
 	) {
 		let previewFeaturesEnabled = configurationService.getValue('workbench')['enablePreviewFeatures'];
-		if (previewFeaturesEnabled || storageService.get(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN)) {
+		if (previewFeaturesEnabled || storageService.get(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN, StorageScope.GLOBAL)) {
 			return;
 		}
 		Promise.all([
@@ -40,7 +39,7 @@ export class EnablePreviewFeatures implements IWorkbenchContribution {
 			}
 			configurationService.updateValue('workbench.enablePreviewFeatures', false);
 
-			const enablePreviewFeaturesNotice = localize('enablePreviewFeatures.notice', "Would you like to enable preview features?");
+			const enablePreviewFeaturesNotice = localize('enablePreviewFeatures.notice', "Preview features are required in order for extensions to be fully supported and for some actions to be available.  Would you like to enable preview features?");
 			notificationService.prompt(
 				Severity.Info,
 				enablePreviewFeaturesNotice,
@@ -48,7 +47,7 @@ export class EnablePreviewFeatures implements IWorkbenchContribution {
 					label: localize('enablePreviewFeatures.yes', "Yes"),
 					run: () => {
 						configurationService.updateValue('workbench.enablePreviewFeatures', true);
-						storageService.store(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN, true);
+						storageService.store(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN, true, StorageScope.GLOBAL);
 					}
 				}, {
 					label: localize('enablePreviewFeatures.no', "No"),
@@ -59,7 +58,7 @@ export class EnablePreviewFeatures implements IWorkbenchContribution {
 					label: localize('enablePreviewFeatures.never', "No, don't show again"),
 					run: () => {
 						configurationService.updateValue('workbench.enablePreviewFeatures', false);
-						storageService.store(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN, true);
+						storageService.store(EnablePreviewFeatures.ENABLE_PREVIEW_FEATURES_SHOWN, true, StorageScope.GLOBAL);
 					},
 					isSecondary: true
 				}]
